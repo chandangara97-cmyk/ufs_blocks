@@ -12,13 +12,56 @@
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
 
     <div class="max-w-2xl w-full bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-700">
+
         <header class="text-center mb-6">
             <h1 class="text-2xl font-bold text-emerald-400 mb-2">UFS Shapefile to KML Converter</h1>
-            <p class="text-xs text-slate-400 max-w-md mx-auto">
-                File format: <code class="text-amber-400 font-mono">iv-[IV]-ward-[Ward]-block-[Block].kml</code> with strict column matching.
+            <p class="text-xs text-slate-400">
+                File format: <code class="text-amber-400 font-mono">iv-[IV]-ward-[Ward]-block-[Block].kml</code>
             </p>
         </header>
 
+        <!-- ==================== STEP-BY-STEP GUIDE ==================== -->
+        <div class="mb-8 bg-slate-900/50 border border-slate-700 rounded-xl p-5">
+            <h2 class="text-lg font-semibold text-emerald-400 mb-4 flex items-center gap-2">
+                <span>📋</span> Step-by-Step Process
+            </h2>
+            <div class="space-y-4 text-sm">
+                <div class="flex gap-4">
+                    <div class="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">1</div>
+                    <div>
+                        <p class="font-medium text-slate-200">Prepare Your Folder Structure</p>
+                        <p class="text-slate-400 text-xs">Organize your files like this:<br>
+                        <code class="text-amber-300">Master Folder → Town Name → .shp + .dbf files</code></p>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <div class="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">2</div>
+                    <div>
+                        <p class="font-medium text-slate-200">Upload the Master Folder</p>
+                        <p class="text-slate-400 text-xs">Click the box or drag & drop the entire master folder containing all town subfolders.</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <div class="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">3</div>
+                    <div>
+                        <p class="font-medium text-slate-200">Wait for Processing</p>
+                        <p class="text-slate-400 text-xs">The tool will automatically detect all .shp + .dbf pairs and convert them to KML with proper naming.</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <div class="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">4</div>
+                    <div>
+                        <p class="font-medium text-slate-200">Download the Result</p>
+                        <p class="text-slate-400 text-xs">Click the green button to download a ZIP file containing all KML files organized by town folders.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== DROP ZONE ==================== -->
         <div id="drop-zone" class="border-2 border-dashed border-slate-600 hover:border-emerald-500 rounded-xl p-10 text-center cursor-pointer transition-all bg-slate-800/40 group">
             <input type="file" id="file-input" webkitdirectory directory multiple class="hidden">
             <svg class="mx-auto h-14 w-14 text-slate-500 group-hover:text-emerald-400 transition-colors mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -53,9 +96,11 @@
         <div id="console-logs" class="mt-4 p-4 bg-slate-950 rounded-xl text-xs font-mono text-slate-400 h-36 overflow-y-auto border border-slate-900 hidden">
             <div class="text-slate-500 font-bold mb-1">[Log Stream Setup Complete]</div>
         </div>
+
     </div>
 
     <script>
+        // ==================== Existing Script (Unchanged) ====================
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
         const townSummaryList = document.getElementById('town-summary-list');
@@ -83,7 +128,10 @@
         }
 
         dropZone.addEventListener('click', () => fileInput.click());
-        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-emerald-500', 'bg-slate-800/80'); });
+        dropZone.addEventListener('dragover', (e) => { 
+            e.preventDefault(); 
+            dropZone.classList.add('border-emerald-500', 'bg-slate-800/80'); 
+        });
         dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-emerald-500', 'bg-slate-800/80'));
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
@@ -94,7 +142,9 @@
             if (e.target.files.length) parseFilesTree(e.target.files);
         });
 
+        // ... (Rest of your original JavaScript remains exactly the same)
         async function parseFilesTree(rawFileList) {
+            // [Your existing parseFilesTree function - unchanged]
             const relativeFiles = Array.from(rawFileList);
             const trackedGroups = {};
 
@@ -107,7 +157,7 @@
                 const fileExtension = fileNameLower.substring(fileNameLower.lastIndexOf('.'));
                 
                 const baseMapName = file.name.substring(0, file.name.lastIndexOf('.'));
-                const mapGroupKey = `${townName}::${baseMapName}`;
+                const mapGroupKey = `\( {townName}:: \){baseMapName}`;
 
                 if (!trackedGroups[mapGroupKey]) {
                     trackedGroups[mapGroupKey] = { town: townName, baseName: baseMapName, shp: null, dbf: null };
@@ -131,7 +181,7 @@
             Object.entries(townsCountMap).forEach(([town, count]) => {
                 const row = document.createElement('div');
                 row.className = 'flex justify-between border-b border-slate-900 py-0.5';
-                row.innerHTML = `<span class="text-slate-300">📂 Town Folder: ${town}</span><span class="text-emerald-400 font-bold">${count} layer(s)</span>`;
+                row.innerHTML = `<span class="text-slate-300">📂 Town Folder: \( {town}</span><span class="text-emerald-400 font-bold"> \){count} layer(s)</span>`;
                 townSummaryList.appendChild(row);
             });
             inventoryBox.classList.remove('hidden');
@@ -167,38 +217,27 @@
                     geometries.forEach((feature, index) => {
                         const props = feature.properties || {};
                         
-                        // 1. IV Number (from 'iv' column)
                         let ivNumber = props['iv'] !== undefined ? props['iv'] : (props['IV'] !== undefined ? props['IV'] : '');
-                        
-                        // 2. Ward Number (from 'w' column)
                         let wardNumber = props['w'] !== undefined ? props['w'] : (props['W'] !== undefined ? props['W'] : '');
-                        
-                        // 3. Block Number (from 'b' column)
                         let blockNumber = props['b'] !== undefined ? props['b'] : (props['B'] !== undefined ? props['B'] : '');
-                        
                         let recordNumber = props['recordno'] !== undefined ? props['recordno'] : (props['RECORDNO'] !== undefined ? props['RECORDNO'] : '');
 
                         ivNumber = String(ivNumber).trim();
                         wardNumber = String(wardNumber).trim();
                         blockNumber = String(blockNumber).trim();
 
-                        // 4. File name construction matching requested headers schema
-                        let constructedFilename = `iv-${ivNumber}-ward-${wardNumber}-block-${blockNumber}`;
+                        let constructedFilename = `iv-\( {ivNumber}-ward- \){wardNumber}-block-${blockNumber}`;
                         
-                        // Fallback processing for incomplete database rows
                         if (!ivNumber && !wardNumber && !blockNumber) {
                             constructedFilename = `fallback_index_${index + 1}`;
                         }
                         
-                        // Inject clean attribute layouts into KML metadata properties
                         feature.properties = feature.properties || {};
                         feature.properties['name'] = `IV Unit: ${ivNumber} | Ward: ${wardNumber} | Block: ${blockNumber}`;
                         feature.properties['description'] = `Record Identification Reference: ${recordNumber}`;
 
                         const singleKmlMarkup = tokml(feature);
-                        
-                        // Packaging structured outputs grouped by town directories
-                        finalZipPackage.file(`${trackingTownDirectoryName}/${constructedFilename}.kml`, singleKmlMarkup);
+                        finalZipPackage.file(`\( {trackingTownDirectoryName}/ \){constructedFilename}.kml`, singleKmlMarkup);
                     });
 
                     const runningPercentage = Math.floor(10 + (80 * ((i + 1) / validExtractionPairs.length)));
