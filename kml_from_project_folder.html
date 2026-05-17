@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UFS Extractor (Header Formatted Naming Schema)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shpjs/4.0.4/shp.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/mapbox/tokml@master/tokml.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="max-w-2xl w-full bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-700">
+        <header class="text-center mb-6">
+            <h1 class="text-2xl font-bold text-emerald-400 mb-2">UFS Shapefile to KML Converter</h1>
+            <p class="text-xs text-slate-400 max-w-md mx-auto">
+                File format: <code class="text-amber-400 font-mono">iv-[IV]-ward-[Ward]-block-[Block].kml</code> with strict column matching.
+            </p>
+        </header>
+
+        <div id="drop-zone" class="border-2 border-dashed border-slate-600 hover:border-emerald-500 rounded-xl p-10 text-center cursor-pointer transition-all bg-slate-800/40 group">
+            <input type="file" id="file-input" webkitdirectory directory multiple class="hidden">
+            <svg class="mx-auto h-14 w-14 text-slate-500 group-hover:text-emerald-400 transition-colors mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            <p class="text-base font-medium text-slate-300">Drop Master Town/Survey Folder Here</p>
+            <p class="text-xs text-slate-500 mt-1">Accepts nested subfolders containing loose <code class="text-slate-400">.shp</code> and <code class="text-slate-400">.dbf</code> files</p>
+        </div>
+
+        <div id="inventory-box" class="mt-4 p-4 bg-slate-950 rounded-xl border border-slate-900 text-xs hidden">
+            <span class="text-emerald-400 font-bold block mb-2 tracking-wide uppercase text-[10px]">Identified Town Workspace Folders:</span>
+            <div id="town-summary-list" class="space-y-1 text-slate-300 font-mono max-h-28 overflow-y-auto pr-1"></div>
+        </div>
+
+        <div id="status-area" class="mt-6 hidden">
+            <div class="flex justify-between items-center mb-1.5">
+                <span id="status-msg" class="text-xs font-semibold text-emerald-400 tracking-wide">Processing features...</span>
+                <span id="status-pct" class="text-xs font-bold text-slate-400">0%</span>
+            </div>
+            <div class="w-full bg-slate-700 rounded-full h-2">
+                <div id="status-bar" class="bg-emerald-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="mt-6 flex justify-center">
+            <button id="action-download-btn" disabled class="w-full px-6 py-3.5 bg-slate-700 text-slate-500 font-bold rounded-xl shadow cursor-not-allowed transition-all flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Extract, Format Headers & Download
+            </button>
+        </div>
+
+        <div id="console-logs" class="mt-4 p-4 bg-slate-950 rounded-xl text-xs font-mono text-slate-400 h-36 overflow-y-auto border border-slate-900 hidden">
+            <div class="text-slate-500 font-bold mb-1">[Log Stream Setup Complete]</div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const townSummaryList = document.getElementById('town-summary-list');
+        const inventoryBox = document.getElementById('inventory-box');
+        const downloadBtn = document.getElementById('action-download-btn');
+        const statusArea = document.getElementById('status-area');
+        const statusMsg = document.getElementById('status-msg');
+        const statusBar = document.getElementById('status-bar');
+        const statusPct = document.getElementById('status-pct');
+        const consoleLogs = document.getElementById('console-logs');
+
+        let completeZipArchiveBlob = null;
+
+        function appendLog(message, level = 'info') {
+            consoleLogs.classList.remove('hidden');
+            const element = document.createElement('div');
+            if (level === 'error') element.className = 'text-rose-400';
+            else if (level === 'warn') element.className = 'text-amber-400';
+            else if (level === 'success') element.className = 'text-emerald-400';
+            else element.className = 'text-slate-400';
+            
+            element.textContent = `> ${message}`;
+            consoleLogs.appendChild(element);
+            consoleLogs.scrollTop = consoleLogs.scrollHeight;
+        }
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-emerald-500', 'bg-slate-800/80'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-emerald-500', 'bg-slate-800/80'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-emerald-500', 'bg-slate-800/80');
+            if (e.dataTransfer.files.length) parseFilesTree(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) parseFilesTree(e.target.files);
+        });
+
+        async function parseFilesTree(rawFileList) {
+            const relativeFiles = Array.from(rawFileList);
+            const trackedGroups = {};
+
+            relativeFiles.forEach(file => {
+                const pathParts = file.webkitRelativePath ? file.webkitRelativePath.split('/') : [];
+                if (pathParts.length < 2) return;
+
+                const townName = pathParts[1]; 
+                const fileNameLower = file.name.toLowerCase();
+                const fileExtension = fileNameLower.substring(fileNameLower.lastIndexOf('.'));
+                
+                const baseMapName = file.name.substring(0, file.name.lastIndexOf('.'));
+                const mapGroupKey = `${townName}::${baseMapName}`;
+
+                if (!trackedGroups[mapGroupKey]) {
+                    trackedGroups[mapGroupKey] = { town: townName, baseName: baseMapName, shp: null, dbf: null };
+                }
+
+                if (fileExtension === '.shp') trackedGroups[mapGroupKey].shp = file;
+                if (fileExtension === '.dbf') trackedGroups[mapGroupKey].dbf = file;
+            });
+
+            const validExtractionPairs = Object.values(trackedGroups).filter(group => group.shp && group.dbf);
+
+            if (validExtractionPairs.length === 0) {
+                alert('No matching pairs of .shp and .dbf files found.');
+                return;
+            }
+
+            townSummaryList.innerHTML = '';
+            const townsCountMap = {};
+            validExtractionPairs.forEach(p => { townsCountMap[p.town] = (townsCountMap[p.town] || 0) + 1; });
+
+            Object.entries(townsCountMap).forEach(([town, count]) => {
+                const row = document.createElement('div');
+                row.className = 'flex justify-between border-b border-slate-900 py-0.5';
+                row.innerHTML = `<span class="text-slate-300">📂 Town Folder: ${town}</span><span class="text-emerald-400 font-bold">${count} layer(s)</span>`;
+                townSummaryList.appendChild(row);
+            });
+            inventoryBox.classList.remove('hidden');
+
+            statusArea.classList.remove('hidden');
+            downloadBtn.disabled = true;
+            downloadBtn.className = "w-full px-6 py-3.5 bg-slate-700 text-slate-500 font-bold rounded-xl shadow cursor-not-allowed flex items-center justify-center gap-2";
+            consoleLogs.innerHTML = '<div class="text-emerald-500 font-bold mb-1">[Processing Pipeline Active - Header Schema Enabled]</div>';
+            
+            setProgressBarState(10, 'Extracting and mapping DBF records...');
+
+            try {
+                const finalZipPackage = new JSZip();
+
+                for(let i = 0; i < validExtractionPairs.length; i++) {
+                    const layerSuite = validExtractionPairs[i];
+                    const trackingTownDirectoryName = layerSuite.town;
+
+                    appendLog(`Parsing [${layerSuite.baseName}] from folder: ${trackingTownDirectoryName}`);
+                    
+                    const [shpArrayBuffer, dbfArrayBuffer] = await Promise.all([
+                        layerSuite.shp.arrayBuffer(),
+                        layerSuite.dbf.arrayBuffer()
+                    ]);
+
+                    const layerGeoJson = shp.combine([
+                        shp.parseShp(shpArrayBuffer),
+                        shp.parseDbf(dbfArrayBuffer)
+                    ]);
+
+                    const geometries = layerGeoJson.features || [];
+                    
+                    geometries.forEach((feature, index) => {
+                        const props = feature.properties || {};
+                        
+                        // 1. IV Number (from 'iv' column)
+                        let ivNumber = props['iv'] !== undefined ? props['iv'] : (props['IV'] !== undefined ? props['IV'] : '');
+                        
+                        // 2. Ward Number (from 'w' column)
+                        let wardNumber = props['w'] !== undefined ? props['w'] : (props['W'] !== undefined ? props['W'] : '');
+                        
+                        // 3. Block Number (from 'b' column)
+                        let blockNumber = props['b'] !== undefined ? props['b'] : (props['B'] !== undefined ? props['B'] : '');
+                        
+                        let recordNumber = props['recordno'] !== undefined ? props['recordno'] : (props['RECORDNO'] !== undefined ? props['RECORDNO'] : '');
+
+                        ivNumber = String(ivNumber).trim();
+                        wardNumber = String(wardNumber).trim();
+                        blockNumber = String(blockNumber).trim();
+
+                        // 4. File name construction matching requested headers schema
+                        let constructedFilename = `iv-${ivNumber}-ward-${wardNumber}-block-${blockNumber}`;
+                        
+                        // Fallback processing for incomplete database rows
+                        if (!ivNumber && !wardNumber && !blockNumber) {
+                            constructedFilename = `fallback_index_${index + 1}`;
+                        }
+                        
+                        // Inject clean attribute layouts into KML metadata properties
+                        feature.properties = feature.properties || {};
+                        feature.properties['name'] = `IV Unit: ${ivNumber} | Ward: ${wardNumber} | Block: ${blockNumber}`;
+                        feature.properties['description'] = `Record Identification Reference: ${recordNumber}`;
+
+                        const singleKmlMarkup = tokml(feature);
+                        
+                        // Packaging structured outputs grouped by town directories
+                        finalZipPackage.file(`${trackingTownDirectoryName}/${constructedFilename}.kml`, singleKmlMarkup);
+                    });
+
+                    const runningPercentage = Math.floor(10 + (80 * ((i + 1) / validExtractionPairs.length)));
+                    setProgressBarState(runningPercentage, `Processed ${i + 1} of ${validExtractionPairs.length} layers...`);
+                }
+
+                setProgressBarState(95, 'Compiling delivery workspace archive...');
+                completeZipArchiveBlob = await finalZipPackage.generateAsync({ type: 'blob' });
+                
+                setProgressBarState(100, 'All layers evaluated successfully!');
+                appendLog('Files structured cleanly into header formatting layout.', 'success');
+
+                downloadBtn.disabled = false;
+                downloadBtn.className = "w-full px-6 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl shadow-lg transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 cursor-pointer";
+
+            } catch (systemFault) {
+                console.error(systemFault);
+                statusMsg.textContent = "Error running conversion process.";
+                statusMsg.className = "text-xs font-semibold text-rose-400";
+                appendLog(`Error: ${systemFault.message}`, 'error');
+            }
+        }
+
+        function setProgressBarState(percentValue, informativeStatusLabel) {
+            statusBar.style.width = `${percentValue}%`;
+            statusPct.textContent = `${percentValue}%`;
+            statusMsg.textContent = informativeStatusLabel;
+        }
+
+        downloadBtn.addEventListener('click', () => {
+            if (!completeZipArchiveBlob) return;
+            const linkObjectURL = URL.createObjectURL(completeZipArchiveBlob);
+            const hiddenDownloadTrigger = document.createElement('a');
+            hiddenDownloadTrigger.href = linkObjectURL;
+            hiddenDownloadTrigger.download = 'town_header_formatted_kml.zip';
+            document.body.appendChild(hiddenDownloadTrigger);
+            hiddenDownloadTrigger.click();
+            document.body.removeChild(hiddenDownloadTrigger);
+            URL.revokeObjectURL(linkObjectURL);
+        });
+    </script>
+</body>
+</html>
