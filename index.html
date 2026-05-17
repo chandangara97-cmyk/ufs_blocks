@@ -3,171 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UFS MASTER CONTROL | FRAME 19</title>
+    <title>UFS Operations Control Desk - NSSO Shimla</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .title { font-family: 'Poppins', sans-serif; }
         
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: radial-gradient(circle at 50% 30%, #1e1b4b 0%, #0f172a 50%, #020617 100%);
-            color: #e0f2fe;
-            overflow-x: hidden;
+        .module-card {
+            transition: all 0.3s ease;
         }
-        
-        .neon-text {
-            text-shadow: 0 0 10px #67e8f9, 0 0 20px #67e8f9, 0 0 40px #22d3ee;
-        }
-        
-        .glass-card {
-            background: rgba(15, 23, 42, 0.65);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(103, 232, 249, 0.2);
-            box-shadow: 0 0 25px rgba(103, 232, 249, 0.15),
-                        inset 0 0 15px rgba(255,255,255,0.05);
-            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-        
-        .glass-card:hover {
-            transform: translateY(-8px) scale(1.02);
-            border-color: #67e8f9;
-            box-shadow: 0 0 35px rgba(103, 232, 249, 0.4),
-                        0 25px 50px -12px rgb(0 0 0 / 0.4);
-        }
-        
-        .header-glow {
-            background: linear-gradient(90deg, #67e8f9, #c026d3, #67e8f9);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            animation: glow 4s linear infinite;
-        }
-        
-        @keyframes glow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        .scanline {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: linear-gradient(to bottom, transparent 50%, rgba(103, 232, 249, 0.08) 50%);
-            background-size: 100% 4px;
-            pointer-events: none;
-            animation: scan 6s linear infinite;
-            opacity: 0.15;
-        }
-        
-        @keyframes scan {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(100%); }
+        .module-card:hover {
+            transform: translateY(-6px);
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col relative">
+<body class="bg-gray-50 min-h-screen text-gray-800">
 
-    <!-- Background Grid -->
-    <div class="absolute inset-0 bg-[linear-gradient(to_right,#22d3ee10_1px,transparent_1px),linear-gradient(to_bottom,#22d3ee10_1px,transparent_1px)] bg-[size:60px_60px] pointer-events-none"></div>
-
-    <div class="max-w-6xl w-full py-12 relative z-10 flex-grow">
-        
-        <!-- Header -->
-        <div class="text-center mb-16">
-            <div class="inline-flex items-center gap-3 mb-6">
-                <div class="w-5 h-5 bg-cyan-400 rounded-full animate-pulse"></div>
-                <span class="text-cyan-400 text-sm tracking-[4px] font-medium">NEURAL INTERFACE v2.4</span>
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-indigo-700 text-white rounded-2xl flex items-center justify-center font-bold text-2xl">U</div>
+                <div>
+                    <h1 class="text-3xl font-semibold title tracking-tight">UFS Operations Control</h1>
+                    <p class="text-sm text-gray-500">NSSO Shimla Hub</p>
+                </div>
             </div>
             
-            <h1 class="text-6xl font-bold tracking-tighter neon-text header-glow mb-3">
-                UFS MASTER CONTROL
-            </h1>
-            <p class="text-slate-400 text-xl tracking-widest">SHIMLA • QUANTUM SURVEY NETWORK</p>
-            
-            <div class="mt-6 flex justify-center gap-8 text-xs text-cyan-300/70">
-                <div>● LIVE CONNECTION</div>
-                <div>SATELLITE SYNC: <span class="text-emerald-400">STABLE</span></div>
-                <div>FRAME 19 • 11 MAY 2026</div>
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-2 text-emerald-600">
+                    <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                    <span class="font-medium text-sm">System Ready</span>
+                </div>
+                <div class="text-sm font-medium">Chandan • Shimla</div>
+                <div class="text-sm text-gray-500">17 May 2026 • 17:25 IST</div>
             </div>
         </div>
+    </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
-            <!-- Boundary Generator -->
-            <div class="glass-card p-8 rounded-3xl relative overflow-hidden group">
-                <div class="scanline"></div>
-                <div class="w-16 h-16 bg-cyan-500/10 rounded-2xl flex items-center justify-center mb-8 border border-cyan-400/30 text-cyan-400">
-                    <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+    <main class="max-w-7xl mx-auto px-8 py-12">
+        <div class="mb-10">
+            <h2 class="text-4xl font-semibold title text-gray-900">Operational Modules</h2>
+            <p class="text-gray-600 mt-2">Choose a module below. Each includes quick step-by-step procedure.</p>
+        </div>
+
+        <!-- Professional Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            <!-- Module 1 -->
+            <a href="kml_Boundary_generator.html" class="module-card bg-white border border-gray-200 rounded-3xl p-8 hover:border-indigo-300 group">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="text-5xl">🗺️</div>
+                    <span class="px-4 py-1.5 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-2xl">MODULE 01</span>
                 </div>
-                <h3 class="text-3xl font-bold mb-2 tracking-tight">BOUNDARY GENERATOR</h3>
-                <p class="text-cyan-300/70 text-sm mb-8">Quantum boundary mapping • Secure export protocol</p>
+                <h3 class="text-2xl font-semibold title mb-2">Boundary Generator</h3>
+                <p class="text-gray-600 mb-6">Create and export town boundaries with IV unit filtering.</p>
                 
-                <div class="space-y-4 mb-10 text-sm">
-                    <div class="flex gap-3"><span class="text-cyan-400 font-mono">01</span><span class="text-slate-300">Filter by Town / IV Unit</span></div>
-                    <div class="flex gap-3"><span class="text-cyan-400 font-mono">02</span><span class="text-slate-300">Upload KML Package</span></div>
-                    <div class="flex gap-3"><span class="text-cyan-400 font-mono">03</span><span class="text-slate-300">Export Encrypted Bundle</span></div>
+                <div class="text-sm">
+                    <p class="font-medium text-gray-500 mb-3">PROCEDURE:</p>
+                    <ol class="space-y-2 text-gray-600">
+                        <li class="flex gap-3"><span class="font-mono text-indigo-600">1.</span> Select Target Town</li>
+                        <li class="flex gap-3"><span class="font-mono text-indigo-600">2.</span> Filter IV Units</li>
+                        <li class="flex gap-3"><span class="font-mono text-indigo-600">3.</span> Generate & Export KML</li>
+                    </ol>
                 </div>
-
-                <a href="kml_Boundary_generator.html" class="block w-full py-5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-center rounded-2xl font-bold text-lg tracking-wider transition-all">
-                    INITIALIZE GENERATOR →
-                </a>
-            </div>
-
-            <!-- Block Finder -->
-            <div class="glass-card p-8 rounded-3xl relative overflow-hidden group">
-                <div class="scanline"></div>
-                <div class="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-8 border border-emerald-400/30 text-emerald-400">
-                    <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                </div>
-                <h3 class="text-3xl font-bold mb-2 tracking-tight">BLOCK FINDER</h3>
-                <p class="text-emerald-300/70 text-sm mb-8">Real-time geospatial • Neural GPS</p>
                 
-                <div class="space-y-4 mb-10 text-sm">
-                    <div class="flex gap-3"><span class="text-emerald-400 font-mono">01</span><span class="text-slate-300">Enable Quantum Location</span></div>
-                    <div class="flex gap-3"><span class="text-emerald-400 font-mono">02</span><span class="text-slate-300">Lock onto satellite signal</span></div>
-                    <div class="flex gap-3"><span class="text-emerald-400 font-mono">03</span><span class="text-slate-300">Identify current Block ID</span></div>
-                </div>
+                <button class="mt-8 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-medium transition-colors">
+                    Launch Boundary Generator →
+                </button>
+            </a>
 
-                <a href="ufs_block_locator.html" class="block w-full py-5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-center rounded-2xl font-bold text-lg tracking-wider transition-all">
-                    ACTIVATE GPS CORE →
-                </a>
-            </div>
-
-            <!-- KML Converter -->
-            <div class="glass-card p-8 rounded-3xl relative overflow-hidden group">
-                <div class="scanline"></div>
-                <div class="w-16 h-16 bg-violet-500/10 rounded-2xl flex items-center justify-center mb-8 border border-violet-400/30 text-violet-400">
-                    <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <!-- Module 2 -->
+            <a href="ufs_block_locator.html" class="module-card bg-white border border-gray-200 rounded-3xl p-8 hover:border-emerald-300 group">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="text-5xl">📍</div>
+                    <span class="px-4 py-1.5 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-2xl">MODULE 02</span>
                 </div>
-                <h3 class="text-3xl font-bold mb-2 tracking-tight">KML CONVERTER</h3>
-                <p class="text-violet-300/70 text-sm mb-8">Raw → Quantum KML • WKT → Holographic</p>
+                <h3 class="text-2xl font-semibold title mb-2">UFS Block Finder</h3>
+                <p class="text-gray-600 mb-6">Real-time GPS based block location and tracking.</p>
                 
-                <div class="space-y-4 mb-10 text-sm">
-                    <div class="flex gap-3"><span class="text-violet-400 font-mono">01</span><span class="text-slate-300">Paste Multipolygon / WKT</span></div>
-                    <div class="flex gap-3"><span class="text-violet-400 font-mono">02</span><span class="text-slate-300">Assign metadata tags</span></div>
-                    <div class="flex gap-3"><span class="text-violet-400 font-mono">03</span><span class="text-slate-300">Generate Earth-ready KML</span></div>
+                <div class="text-sm">
+                    <p class="font-medium text-gray-500 mb-3">PROCEDURE:</p>
+                    <ol class="space-y-2 text-gray-600">
+                        <li class="flex gap-3"><span class="font-mono text-emerald-600">1.</span> Load Structural Boundaries</li>
+                        <li class="flex gap-3"><span class="font-mono text-emerald-600">2.</span> Sync GPS Feed</li>
+                        <li class="flex gap-3"><span class="font-mono text-emerald-600">3.</span> Track Location</li>
+                    </ol>
                 </div>
+                
+                <button class="mt-8 w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-medium transition-colors">
+                    Open Block Finder →
+                </button>
+            </a>
 
-                <a href="lat_long__KML.html" class="block w-full py-5 bg-gradient-to-r from-violet-500 to-fuchsia-600 hover:from-violet-400 hover:to-fuchsia-500 text-center rounded-2xl font-bold text-lg tracking-wider transition-all">
-                    TRANSMUTE DATA →
-                </a>
-            </div>
+            <!-- Module 3 -->
+            <a href="kml_from_project_folder.html" class="module-card bg-white border border-gray-200 rounded-3xl p-8 hover:border-purple-300 group">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="text-5xl">📂</div>
+                    <span class="px-4 py-1.5 text-xs font-medium bg-purple-100 text-purple-700 rounded-2xl">MODULE 03</span>
+                </div>
+                <h3 class="text-2xl font-semibold title mb-2">KML Project Parser</h3>
+                <p class="text-gray-600 mb-6">Batch extract and compile KML files from project folders.</p>
+                
+                <div class="text-sm">
+                    <p class="font-medium text-gray-500 mb-3">PROCEDURE:</p>
+                    <ol class="space-y-2 text-gray-600">
+                        <li class="flex gap-3"><span class="font-mono text-purple-600">1.</span> Drop Project Folder</li>
+                        <li class="flex gap-3"><span class="font-mono text-purple-600">2.</span> Select Files</li>
+                        <li class="flex gap-3"><span class="font-mono text-purple-600">3.</span> Compile Layers</li>
+                    </ol>
+                </div>
+                
+                <button class="mt-8 w-full bg-purple-600 hover:bg-purple-700 text-white py-4 rounded-2xl font-medium transition-colors">
+                    Start Parsing →
+                </button>
+            </a>
+
+            <!-- Module 4 -->
+            <a href="lat_long__KML.html" class="module-card bg-white border border-gray-200 rounded-3xl p-8 hover:border-amber-300 group">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="text-5xl">🔄</div>
+                    <span class="px-4 py-1.5 text-xs font-medium bg-amber-100 text-amber-700 rounded-2xl">MODULE 04</span>
+                </div>
+                <h3 class="text-2xl font-semibold title mb-2">Bulk WKT Transmuter</h3>
+                <p class="text-gray-600 mb-6">Convert coordinates and generate GIS packages.</p>
+                
+                <div class="text-sm">
+                    <p class="font-medium text-gray-500 mb-3">PROCEDURE:</p>
+                    <ol class="space-y-2 text-gray-600">
+                        <li class="flex gap-3"><span class="font-mono text-amber-600">1.</span> Paste Geometry Data</li>
+                        <li class="flex gap-3"><span class="font-mono text-amber-600">2.</span> Auto-detect Format</li>
+                        <li class="flex gap-3"><span class="font-mono text-amber-600">3.</span> Export KML/ZIP</li>
+                    </ol>
+                </div>
+                
+                <button class="mt-8 w-full bg-amber-600 hover:bg-amber-700 text-white py-4 rounded-2xl font-medium transition-colors">
+                    Open Transmuter →
+                </button>
+            </a>
 
         </div>
-    </div>
+    </main>
 
-    <!-- Clean Footer -->
-    <footer class="w-full bg-[#0a0f1c] border-t border-slate-700 py-8 mt-auto">
-        <div class="max-w-6xl mx-auto px-6 text-center">
-            <p class="text-cyan-400 font-medium text-base mb-1">Created by Chandan Panwar</p>
-            <div class="text-slate-400 text-xs tracking-widest">
-                NATIONAL SAMPLE SURVEY OFFICE • SHIMLA REGION<br>
-                Unified Field Survey System | All Rights Reserved © 2026
-            </div>
-        </div>
+    <footer class="bg-white border-t border-gray-200 py-8 text-center text-sm text-gray-500">
+        Ministry of Statistics & Programme Implementation • Government of India
     </footer>
 
 </body>
