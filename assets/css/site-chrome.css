@@ -1,0 +1,171 @@
+/* ============================================================
+   SITE CHROME — shared header + footer
+   Used on every page via assets/js/site-chrome.js
+   Namespaced with "he-" so it never collides with page-local CSS.
+   ============================================================ */
+
+/* ============================================================
+   THEME TOKENS — one source of truth for the whole site.
+   Light = warm cream/gold (default). Dark = navy/gold "premium".
+   Toggle sets data-theme on <html>; both header/footer and any
+   page that opts in via var(--he-*) respond automatically.
+   ============================================================ */
+:root{
+  --he-bg:#14301f;
+  --he-bg-alt:#123a2b;
+  --he-border:#25493a;
+  --he-text:#ffffff;
+  --he-text-soft:#c3d4c8;
+  --he-gold:#f5a623;
+  --he-gold-light:#ffb84d;
+  --he-green-900:#14301f;
+  --he-shadow:rgba(6,17,29,.35);
+  --he-contour:rgba(255,255,255,.04);
+  --he-mono:'JetBrains Mono',ui-monospace,monospace;
+  --he-footer-bg:#0a1811;
+  --he-footer-text:#a8c2af;
+  --he-footer-text-soft:#5f8a72;
+  --nv-navy:#14301f;
+  --nv-navy-deep:#0a1811;
+  --nv-navy-light:#1f4a30;
+  --nv-blue:#3f7a5a;
+  --nv-teal:#2f8f6f;
+  --nv-gold:#f5a623;
+  --nv-text:#152233;
+  --nv-text-soft:#5b6b7a;
+  --nv-bg:#ffffff;
+  --nv-bg-alt:#f4f7fa;
+  --nv-border:#e3e8ee;
+  --nv-radius:14px;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --he-bg:#0a1811;
+  --he-bg-alt:#14301f;
+  --he-border:#25493a;
+  --he-text:#ffffff;
+  --he-text-soft:#c3d4c8;
+  --he-gold:#f5a623;
+  --he-gold-light:#ffb84d;
+  --he-green-900:#f5a623;
+  --he-shadow:rgba(0,0,0,.5);
+  --he-contour:rgba(255,255,255,.03);
+  --he-footer-bg:#050f1a;
+  --he-footer-text:#9bbaa3;
+  --he-footer-text-soft:#5f8a72;
+  --nv-navy:#0a1811;
+  --nv-navy-deep:#071410;
+  --nv-navy-light:#14301f;
+  --nv-bg:#0c2418;
+  --nv-bg-alt:#14301f;
+  --nv-border:#25493a;
+  --nv-text:#eef4f0;
+  --nv-text-soft:#c3d4c8;
+  color-scheme:dark;
+}
+
+/* ---------- HEADER (matches the yui.html Route Builder topbar) ---------- */
+.he-header{
+  position:fixed;top:0;left:0;right:0;z-index:1050;
+  width:100%;box-sizing:border-box;
+  display:flex;align-items:center;gap:20px;justify-content:space-between;
+  padding:14px 24px;
+  background:var(--he-bg);
+  border-bottom:1px solid var(--he-border);
+  box-shadow:0 2px 10px var(--he-shadow);
+  background-image:
+    repeating-radial-gradient(circle at 12% 120%, transparent 0 34px, var(--he-contour) 35px 36px, transparent 37px 70px),
+    repeating-radial-gradient(circle at 88% -40%, transparent 0 46px, var(--he-contour) 47px 48px, transparent 49px 90px);
+  background-repeat:no-repeat;
+  font-family:'Jost',Arial,sans-serif;
+  transition:background .25s ease,border-color .25s ease;
+}
+.he-header *{box-sizing:border-box}
+
+.he-logo{display:flex;align-items:center;gap:11px;text-decoration:none;flex-shrink:0}
+.he-logo svg{flex:none;filter:drop-shadow(0 2px 3px rgba(28,20,9,.12))}
+.he-logo-text{display:block;font-family:'Cormorant',Georgia,serif;font-size:18px;font-weight:600;letter-spacing:.2px;color:var(--he-text);white-space:nowrap;line-height:1.15}
+.he-logo-text em{font-style:normal;display:block;font-family:'Jost',Arial,sans-serif;font-size:10px;color:var(--he-gold);letter-spacing:1.6px;text-transform:uppercase;font-weight:600;margin-top:1px}
+
+.he-nav-links{display:flex;list-style:none;gap:2px;margin:0;padding:0;align-items:center;flex:1;justify-content:center;flex-wrap:wrap}
+.he-nav-links a{
+  display:flex;align-items:center;height:36px;padding:0 14px;
+  font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  font-family:var(--he-mono);
+  color:var(--he-text-soft);text-decoration:none;border-radius:30px;
+  transition:color .2s ease,background .2s ease;white-space:nowrap;
+}
+.he-nav-links a:hover{color:var(--he-gold);background:rgba(176,125,58,.1)}
+.he-nav-links a.he-active{color:#fff;background:linear-gradient(135deg,var(--he-gold-light),var(--he-gold));box-shadow:0 3px 10px rgba(176,125,58,.35)}
+
+.he-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+
+/* segmented light/dark toggle, matching yui's .seg */
+.he-seg{display:flex;border:1px solid var(--he-border);border-radius:10px;overflow:hidden;flex-shrink:0}
+.he-seg button{border:0;background:var(--he-bg);color:var(--he-text-soft);font-size:12px;padding:8px 11px;cursor:pointer;display:flex;gap:5px;align-items:center;transition:background .15s,color .15s;font-family:'Jost',Arial,sans-serif}
+.he-seg button.he-active{background:var(--he-bg-alt);color:var(--he-gold);font-weight:600}
+
+.he-phone{
+  display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;
+  color:var(--he-text-soft);text-decoration:none;white-space:nowrap;
+}
+.he-phone:hover{color:var(--he-gold)}
+.he-phone svg{width:13px;height:13px;flex-shrink:0}
+.he-cta{
+  padding:8px 18px;background:linear-gradient(135deg,var(--he-gold-light),var(--he-gold));color:#fff;font-size:10px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;text-decoration:none;border-radius:100px;
+  white-space:nowrap;box-shadow:0 3px 10px rgba(176,125,58,.35);
+  transition:filter .2s ease,box-shadow .2s ease;
+}
+.he-cta:hover{filter:brightness(1.06);box-shadow:0 5px 16px rgba(176,125,58,.45)}
+
+.he-burger{display:none;background:none;border:none;padding:8px;cursor:pointer;flex-shrink:0}
+.he-burger span{display:block;width:20px;height:2px;background:var(--he-text);margin:4px 0;border-radius:2px;transition:transform .2s ease,opacity .2s ease,background .2s ease}
+.he-burger.he-open span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+.he-burger.he-open span:nth-child(2){opacity:0}
+.he-burger.he-open span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+
+/* spacer so page content never sits under the fixed header (height set by JS to match header) */
+.he-header-spacer{width:100%}
+
+@media (max-width:900px){
+  .he-header{flex-wrap:wrap;gap:10px;padding:10px 14px}
+  .he-logo-text em{display:none}
+  .he-nav-links{
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;padding:80px 20px 20px;
+    background:var(--he-bg);overflow-y:auto;
+    transform:translateX(100%);transition:transform .25s ease;
+    z-index:1049;
+  }
+  .he-nav-links.he-open{transform:translateX(0)}
+  .he-nav-links a{height:48px;padding:0 8px;font-size:13px;border-radius:0;border-bottom:1px solid var(--he-border)}
+  .he-phone{display:none}
+  .he-seg button{padding:8px 9px;font-size:11px}
+  .he-burger{display:block}
+}
+
+/* ---------- FOOTER (matching palette/typography, contour texture + gold top edge) ---------- */
+.he-footer{
+  background:var(--he-footer-bg);color:var(--he-footer-text);padding:44px 24px 28px;
+  font-family:'Jost',Arial,sans-serif;
+  border-top:2px solid var(--he-gold);
+  background-image:
+    repeating-radial-gradient(circle at 90% -30%, transparent 0 40px, rgba(255,255,255,.03) 41px 42px, transparent 43px 80px);
+  background-repeat:no-repeat;
+  transition:background .25s ease;
+}
+.he-footer-inner{max-width:1240px;margin:0 auto;display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between}
+.he-foot-brand{font-family:'Cormorant',Georgia,serif;font-size:20px;color:#f8f5ef}
+.he-foot-brand em{font-style:italic;color:var(--he-gold-light)}
+.he-foot-brand span{display:block;font-family:var(--he-mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--he-footer-text-soft);margin-top:5px}
+.he-foot-links{list-style:none;display:flex;flex-wrap:wrap;gap:16px;margin:0;padding:0}
+.he-foot-links a{color:var(--he-footer-text);text-decoration:none;font-size:12px;letter-spacing:.03em;transition:color .2s ease}
+.he-foot-links a:hover{color:var(--he-gold-light)}
+.he-foot-copy{width:100%;margin-top:28px;padding-top:20px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;font-family:var(--he-mono);letter-spacing:.3px;color:var(--he-footer-text-soft);text-align:center}
+
+/* ---------- MOBILE CONTENT DENSITY (applies site-wide) ---------- */
+@media (max-width:640px){
+  .he-header{padding:0 14px}
+  body{-webkit-text-size-adjust:100%}
+}

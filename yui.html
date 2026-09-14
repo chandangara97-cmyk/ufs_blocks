@@ -1,0 +1,2000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luxotic India — Plan My Trip</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@300;400;500;600;700&family=Jost:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Palette matched to luxoticindia.com (index.html / packages.html) */
+  --green-900:#6b4415;
+  --green-700:#9c6a28;
+  --green-600:#b07d3a;
+  --green-500:#c99248;
+  --green-50:#fdf6ec;
+  --ink:#1c1409;
+  --ink-soft:#5a4a36;
+  --line:#e5ddd0;
+  --card:#ffffff;
+  --bg:#f8f5ef;
+  --gold:#b07d3a;
+  --gold2:#c99248;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(28,20,9,.06), 0 8px 24px -12px rgba(28,20,9,.12);
+  --contour: rgba(107,68,21,.055);
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  --trail: #5c6e4f;
+}
+[data-theme="dark"]{
+  --ink:#f0ece2; --ink-soft:#c9bda9; --line:#3a2e1c; --card:#241a0e; --bg:#150f08;
+  --green-50:#2a1f10; --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  --contour: rgba(255,255,255,.035); --trail:#8fae7a;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden;}
+img{max-width:100%;}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:'Jost',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;
+  transition:background .25s ease, color .25s ease;
+}
+a{color:inherit;}
+.brand-text b, .page-title h1, .page-title>b, h1, h2, h3{font-family:'Cormorant',Georgia,serif;}
+
+@media (prefers-reduced-motion: no-preference){
+  @keyframes riseIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+  .topbar{animation:riseIn .5s cubic-bezier(.16,1,.3,1) both;}
+  .controls{animation:riseIn .5s cubic-bezier(.16,1,.3,1) .08s both;}
+  .layout > *{animation:riseIn .55s cubic-bezier(.16,1,.3,1) .16s both;}
+  .layout > *:nth-child(2){animation-delay:.22s;}
+  .layout > *:nth-child(3){animation-delay:.28s;}
+}
+
+.topbar{
+  display:flex; align-items:center; gap:24px; justify-content:space-between;
+  padding:16px 26px; background:var(--card); border-bottom:1px solid var(--line);
+  position:sticky; top:0; z-index:50;
+  background-image:
+    repeating-radial-gradient(circle at 12% 120%, transparent 0 34px, var(--contour) 35px 36px, transparent 37px 70px),
+    repeating-radial-gradient(circle at 88% -40%, transparent 0 46px, var(--contour) 47px 48px, transparent 49px 90px);
+  background-repeat:no-repeat;
+}
+.brand{display:flex; align-items:center; gap:11px;}
+.brand svg{flex:none; filter:drop-shadow(0 2px 3px rgba(28,20,9,.12));}
+.brand-text b{display:block; font-size:18px; letter-spacing:.2px; font-weight:600;}
+.brand-text span{display:block; font-size:10px; color:var(--gold); letter-spacing:1.6px; text-transform:uppercase; font-weight:600; margin-top:1px;}
+.page-title{flex:1; min-width:180px;}
+.page-title .eyebrow{display:block; font-family:var(--mono); font-size:10px; font-weight:500; letter-spacing:1.8px; text-transform:uppercase; color:var(--trail); margin-bottom:3px;}
+.page-title h1{margin:0; font-size:22px; font-weight:600; line-height:1.1; letter-spacing:.1px;}
+.page-title p{margin:2px 0 0; font-size:12px; color:var(--ink-soft);}
+.top-actions{display:flex; align-items:center; gap:10px;}
+.seg{display:flex; border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+.seg button{border:0; background:var(--card); color:var(--ink-soft); font-size:12.5px; padding:8px 12px; cursor:pointer; display:flex; gap:6px; align-items:center; transition:background .15s,color .15s;}
+.seg button.active{background:var(--green-50); color:var(--green-700); font-weight:600;}
+.avatar-chip{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; padding:6px 10px 6px 6px; border:1px solid var(--line); border-radius:20px; cursor:default;}
+.avatar-chip .dot{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--green-600),var(--gold)); display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;}
+
+.controls{
+  display:flex; flex-wrap:wrap; gap:14px; align-items:end;
+  background:var(--card); margin:18px 20px 0; padding:18px 20px; border-radius:var(--radius); box-shadow:var(--shadow);
+  border-top:2px solid var(--gold);
+}
+.field{display:flex; flex-direction:column; gap:7px; min-width:160px; flex:1; position:relative;}
+.field + .field::before{
+  content:''; position:absolute; left:-8px; top:26px; bottom:2px; width:1px;
+  background:repeating-linear-gradient(to bottom, var(--line) 0 3px, transparent 3px 7px);
+}
+.field label{font-size:10.5px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.9px; font-family:var(--mono);}
+.field .ctrl{
+  display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:9px; padding:10px 12px; background:var(--bg);
+  transition:border-color .15s, box-shadow .15s;
+}
+.field .ctrl:focus-within{border-color:var(--gold); box-shadow:0 0 0 3px rgba(176,125,58,.14);}
+.field .ctrl svg{flex:none; color:var(--gold);}
+.field input, .field select{
+  border:0; background:transparent; outline:none; font-size:13.5px; color:var(--ink); width:100%; font-family:inherit;
+}
+.stepper{display:flex; align-items:center; gap:10px;}
+.stepper button{width:24px;height:24px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;font-size:14px;line-height:1; transition:background .15s,border-color .15s;}
+.stepper button:hover{border-color:var(--gold); background:var(--green-50);}
+.btn-primary{
+  background:linear-gradient(135deg,var(--green-600),var(--green-700)); color:#fff; border:0; border-radius:9px;
+  padding:12px 22px; font-size:13.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px;
+  box-shadow:0 6px 16px -6px rgba(107,68,21,.5); white-space:nowrap;
+  transition:transform .15s, box-shadow .15s, filter .15s;
+}
+.btn-primary:hover:not(:disabled){filter:brightness(1.07); transform:translateY(-1px); box-shadow:0 10px 22px -8px rgba(107,68,21,.6);}
+.btn-primary:active:not(:disabled){transform:translateY(0px) scale(.98);}
+.btn-primary:disabled{opacity:.5; cursor:not-allowed;}
+
+.layout{
+  display:grid; grid-template-columns:300px 1fr 320px; gap:16px; padding:16px 20px 26px; align-items:start;
+}
+@media (max-width:1180px){ .layout{grid-template-columns:1fr;} }
+
+@media (max-width:760px){
+  .topbar{flex-wrap:wrap; gap:10px; padding:10px 14px;}
+  .brand-text span{display:none;}
+  .brand-text b{font-size:15px;}
+  .page-title{order:3; flex-basis:100%; min-width:0;}
+  .page-title p{display:none;}
+  .page-title h1{font-size:14px;}
+  .top-actions{gap:8px;}
+  .avatar-chip span:not(.dot){display:none;}
+  .avatar-chip{padding:6px;}
+  .seg button{padding:8px 10px; font-size:11.5px;}
+
+  .controls{margin:10px 12px 0; padding:12px; gap:10px;}
+  .field{min-width:0 !important; max-width:none !important; width:100%; flex:1 1 100%;}
+  .btn-primary{width:100%; justify-content:center;}
+
+  .layout{padding:10px 12px 18px; gap:12px;}
+  .panel{padding:12px;}
+  #map{height:340px;}
+
+  .gw-pill{padding:9px 12px; font-size:12.5px;}
+  .stepper button{width:32px; height:32px; font-size:16px;}
+  .search-box{padding:9px 10px;}
+}
+
+@media (max-width:400px){
+  .brand-text b{font-size:14px;}
+  #map{height:300px;}
+}
+
+.panel{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; transition:box-shadow .2s;}
+.panel h3{margin:0 0 12px; font-size:15.5px; font-weight:600; display:flex; align-items:center; justify-content:space-between;}
+.panel h3 .x{cursor:pointer; color:var(--ink-soft); font-size:15px;}
+
+.search-box{display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--bg); margin-bottom:10px; position:relative;}
+.search-box input{border:0; background:transparent; outline:none; width:100%; font-size:13px; color:var(--ink); font-family:inherit;}
+.search-results{
+  position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--card); border:1px solid var(--line);
+  border-radius:10px; box-shadow:var(--shadow); max-height:280px; overflow:auto; z-index:40; display:none;
+}
+.search-results.show{display:block;}
+.search-results .sr-item{padding:9px 12px; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:space-between; gap:8px; border-bottom:1px solid var(--line);}
+.search-results .sr-item:last-child{border-bottom:0;}
+.search-results .sr-item:hover{background:var(--green-50);}
+.search-results .sr-item small{color:var(--ink-soft); font-weight:400;}
+.sr-left{display:flex; align-items:center; gap:8px; min-width:0;}
+.sr-thumb{width:28px; height:28px; border-radius:7px; flex:none; overflow:hidden; position:relative; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff;}
+.sr-thumb img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+.sr-name{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.search-results .sr-empty{padding:14px; font-size:12.5px; color:var(--ink-soft); text-align:center;}
+
+.gw-pills{display:flex; flex-wrap:wrap; gap:7px;}
+.gw-pill{display:flex; align-items:center; gap:6px; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:20px; padding:7px 13px; font-size:12.5px; font-weight:600; cursor:pointer; transition:transform .15s,border-color .15s,background .15s,box-shadow .15s;}
+.gw-pill:hover{border-color:var(--gold2); transform:translateY(-1px); box-shadow:0 4px 10px -4px rgba(28,20,9,.18);}
+.gw-pill.active{background:var(--green-600); border-color:var(--green-600); color:#fff; box-shadow:0 4px 12px -4px rgba(176,125,58,.5);}
+
+.flow-panel{background:var(--card); margin:16px 20px 0; padding:16px 18px; border-radius:var(--radius); box-shadow:var(--shadow);}
+.flow-panel h3{margin:0 0 10px;}
+.flow-panel select{width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:9px; background:var(--bg); color:var(--ink); font-size:13.5px; font-family:inherit;}
+
+.pkg-cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px;}
+.pkg-card{border:1px solid var(--line); border-radius:12px; overflow:hidden; cursor:pointer; background:var(--bg); transition:transform .2s, box-shadow .2s, border-color .2s;}
+.pkg-card:hover{border-color:var(--gold2); transform:translateY(-3px); box-shadow:0 12px 24px -12px rgba(28,20,9,.28);}
+.pkg-card img{width:100%; height:110px; object-fit:cover; display:block; transition:transform .35s;}
+.pkg-card:hover img{transform:scale(1.05);}
+.pkg-card .pkg-card-body{padding:10px 12px;}
+.pkg-card .pkg-card-body b{display:block; font-size:13px; margin-bottom:4px;}
+.pkg-card .pkg-card-meta{display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-soft);}
+.pkg-card .pkg-card-meta .price{color:var(--green-700); font-weight:700;}
+
+.pkg-detail-header{display:flex; gap:14px; align-items:flex-start; margin-bottom:12px;}
+.pkg-detail-header img{width:110px; height:80px; object-fit:cover; border-radius:10px; flex:none;}
+.pkg-detail-header .x{margin-left:auto; cursor:pointer; color:var(--ink-soft); font-size:20px; line-height:1;}
+.pkg-detail-meta{display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--ink-soft); margin-top:4px;}
+.pkg-detail-meta b{color:var(--ink);}
+.pkg-day{border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px;}
+.pkg-day .pd-title{font-size:13px; font-weight:700; margin-bottom:3px;}
+.pkg-day .pd-desc{font-size:12px; color:var(--ink-soft);}
+.pkg-day .pd-dist{font-size:11px; color:var(--green-700); margin-top:4px; font-weight:600;}
+.pkg-inc-exc{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:12px 0;}
+.pkg-inc-exc ul{margin:4px 0 0; padding-left:18px; font-size:12px; color:var(--ink-soft);}
+.pkg-inc-exc h4{margin:0; font-size:12.5px;}
+.no-pkg-note{font-size:12.5px; color:var(--ink-soft); padding:10px 0;}
+
+.stop-list{display:flex; flex-direction:column; gap:8px; flex:1 1 auto; min-height:0; overflow:auto; padding-right:2px;}
+.stop-card{
+  display:flex; align-items:center; gap:10px; border:1px solid var(--line); border-radius:10px; padding:8px; background:var(--bg);
+  cursor:grab; transition:border-color .15s, transform .15s;
+}
+.stop-card:hover{border-color:var(--gold2);}
+.stop-card.dragging{opacity:.4;}
+.stop-thumb{
+  width:40px; height:40px; border-radius:9px; flex:none; display:flex; align-items:center; justify-content:center;
+  font-size:16px; color:#fff; font-weight:700; position:relative; overflow:hidden;
+}
+.stop-thumb img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+.stop-thumb .stop-thumb-icon{position:relative; z-index:0;}
+.stop-info{flex:1; min-width:0;}
+.stop-info b{display:block; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.stop-info span{display:block; font-size:11px; color:var(--ink-soft);}
+.stop-remove{border:0; background:transparent; color:var(--ink-soft); cursor:pointer; font-size:15px; padding:4px;}
+.stop-remove:hover{color:#c94b3c;}
+.stop-badge{width:22px;height:22px;border-radius:50%;background:var(--green-600);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;}
+.panel-footer{display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:12.5px;}
+.link-btn{background:none;border:0;color:var(--ink-soft);cursor:pointer;font-size:12.5px;}
+.link-btn.danger{color:#c94b3c;}
+
+.map-wrap{position:relative; border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); background:var(--card);}
+#map{height:560px; width:100%; background:#dfe9e2;}
+.map-toggle{position:absolute; top:12px; right:12px; z-index:30; display:flex; border-radius:9px; overflow:hidden; box-shadow:var(--shadow);}
+.map-toggle button{border:0; padding:7px 14px; font-size:12.5px; font-weight:600; cursor:pointer; background:var(--card); color:var(--ink-soft); transition:background .15s,color .15s;}
+.map-toggle button.active{background:var(--green-700); color:#fff;}
+.stat-bar{display:flex; flex-wrap:wrap; padding:0; border-top:1px solid var(--line);}
+.stat{flex:1; min-width:120px; display:flex; align-items:center; gap:11px; padding:14px 16px; border-left:1px solid var(--line);}
+.stat:first-child{border-left:0;}
+.stat .ic{width:34px;height:34px;border-radius:9px;background:var(--green-50);color:var(--green-700);display:flex;align-items:center;justify-content:center; flex:none;}
+.stat b{display:block; font-size:16px; font-family:var(--mono); font-weight:700; letter-spacing:-.2px;}
+.stat span{display:block; font-size:10px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.8px; margin-top:2px;}
+.empty-map-hint{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:6px;
+  pointer-events:none; text-align:center; padding:20px;
+}
+.empty-map-hint > *{
+  background:rgba(255,255,255,.88); backdrop-filter:blur(3px); padding:3px 12px; border-radius:6px; color:#1c1409;
+}
+.empty-map-hint b{font-size:15px; font-family:'Cormorant',serif; font-weight:600;}
+.empty-map-hint span{font-size:12.5px; color:#5a4a36; max-width:280px;}
+
+.itinerary-list{display:flex; flex-direction:column; gap:2px; flex:1 1 auto; min-height:0; overflow:auto; padding-right:2px; position:relative;}
+.day-card{display:flex; gap:10px; border:1px solid var(--line); border-radius:10px; padding:10px; background:var(--bg); position:relative; margin-bottom:8px; transition:border-color .15s;}
+.day-card:hover{border-color:var(--gold2);}
+.day-thumb{width:52px; height:52px; border-radius:9px; flex:none; overflow:hidden; position:relative; display:flex; align-items:center; justify-content:center; font-size:18px; color:#fff;}
+.day-thumb img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+.day-card:not(:last-child)::after{
+  content:''; position:absolute; left:29px; top:38px; bottom:-9px; width:1px;
+  background:repeating-linear-gradient(to bottom, var(--gold2) 0 3px, transparent 3px 6px);
+}
+.day-num{
+  width:38px;height:38px;border-radius:9px;background:var(--green-700);color:#fff;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-size:9px;font-weight:700;text-transform:uppercase; flex:none; line-height:1.1;
+  z-index:1; box-shadow:0 0 0 3px var(--bg);
+}
+.day-num b{font-size:16px; line-height:1; font-family:var(--mono);}
+.day-body{flex:1; min-width:0;}
+.day-body .route-line{font-size:12.5px; font-weight:600; line-height:1.35;}
+.day-body .meta{font-size:10.5px; color:var(--ink-soft); margin-top:4px; display:flex; gap:10px; font-family:var(--mono);}
+.day-actions{display:flex; flex-direction:column; gap:6px;}
+.day-actions button{border:0; background:transparent; color:var(--ink-soft); cursor:pointer; font-size:13px;}
+.day-actions button:hover{color:var(--green-700);}
+
+.summary-row{display:flex; justify-content:space-between; align-items:baseline; padding:9px 0; border-bottom:1px dashed var(--line); font-size:12.5px;}
+.summary-row:last-of-type{border-bottom:0;}
+.summary-row span:first-child{color:var(--ink-soft); text-transform:uppercase; letter-spacing:.5px; font-size:10.5px; font-family:var(--mono);}
+.summary-row b{font-weight:700; font-family:var(--mono); font-size:14px;}
+.save-btn{
+  width:100%; margin-top:12px; background:var(--green-700); color:#fff; border:0; border-radius:9px; padding:12px;
+  font-size:13.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:transform .15s, filter .15s;
+}
+.save-btn:hover{filter:brightness(1.08); transform:translateY(-1px);}
+.save-btn:active{transform:translateY(0); }
+
+/* ---- Pay & Book (Razorpay) block in package detail panel ---- */
+.pkg-pay-block{border:1px solid var(--line); border-radius:9px; padding:12px; margin-top:14px; background:var(--card);}
+.pkg-pay-label{font-size:10.5px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.9px; margin-bottom:8px;}
+.pkg-pay-options{display:flex; gap:8px; margin-bottom:10px;}
+.pkg-pay-opt{flex:1; padding:8px; border:1px solid var(--line); border-radius:7px; cursor:pointer; text-align:center; transition:all .15s; background:var(--bg);}
+.pkg-pay-opt.selected{border-color:var(--gold); background:var(--green-50);}
+.pkg-pay-opt:hover:not(.selected){border-color:var(--gold2);}
+.pkg-pay-opt-name{font-size:11.5px; font-weight:700; color:var(--ink);}
+.pkg-pay-opt-val{font-size:13px; color:var(--gold); font-weight:700; margin-top:2px;}
+.pkg-pay-row{display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft); margin-bottom:10px;}
+.pkg-pay-row b{color:var(--ink);}
+.pay-btn{
+  width:100%; background:linear-gradient(135deg,var(--green-600),var(--gold)); color:#fff; border:0; border-radius:9px; padding:12px;
+  font-size:13.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:transform .15s, filter .15s;
+}
+.pay-btn:hover{filter:brightness(1.08); transform:translateY(-1px);}
+.pay-btn:disabled{opacity:.5; cursor:not-allowed;}
+.pkg-pay-guest{display:flex; flex-direction:column; gap:8px; margin-bottom:10px;}
+.pkg-pay-guest input{
+  border:1px solid var(--line); border-radius:7px; padding:9px 10px; background:var(--bg); color:var(--ink);
+  font-size:12.5px; font-family:inherit; outline:none; transition:border-color .15s;
+}
+.pkg-pay-guest input:focus{border-color:var(--gold);}
+.pkg-pay-guest input.error{border-color:#c0392b;}
+
+/* ---- Route Summary as a ticket stub ---- */
+.ticket-panel{position:relative; overflow:visible;}
+.ticket-panel .ticket-code{
+  font-family:var(--mono); font-size:10px; letter-spacing:1.5px; color:var(--gold);
+  text-transform:uppercase; margin:-2px 0 12px; display:flex; justify-content:space-between; align-items:center;
+}
+.ticket-panel .ticket-code::after{content:'✂ TEAR TO BOOK'; color:var(--ink-soft); opacity:.55; font-size:9px; letter-spacing:1px;}
+.ticket-perf{
+  position:relative; height:1px; margin:14px -16px 12px; border-top:2px dashed var(--line);
+}
+.ticket-perf::before,.ticket-perf::after{
+  content:''; position:absolute; top:-9px; width:18px; height:18px; border-radius:50%; background:var(--bg);
+}
+.ticket-perf::before{ left:-9px; }
+.ticket-perf::after{ right:-9px; }
+.toast{
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff;
+  padding:11px 18px; border-radius:30px; font-size:13px; box-shadow:var(--shadow); opacity:0; pointer-events:none;
+  transition:all .25s ease; z-index:100;
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+.promo{
+  margin-top:14px; border-radius:var(--radius); padding:16px; color:#fff;
+  background:linear-gradient(160deg,var(--green-700),var(--green-900));
+  position:relative; overflow:hidden;
+}
+.promo::before{
+  content:''; position:absolute; inset:0;
+  background-image:repeating-radial-gradient(circle at 100% 0%, transparent 0 22px, rgba(255,255,255,.05) 23px 24px, transparent 25px 46px);
+  pointer-events:none;
+}
+.promo b{display:block; font-size:14.5px; margin-bottom:4px; font-family:'Cormorant',serif; font-weight:600; font-size:18px;}
+.promo p{margin:0 0 12px; font-size:12px; opacity:.85; position:relative;}
+.promo button{background:var(--gold); border:0; color:#2b1e00; font-weight:700; padding:9px 14px; border-radius:8px; font-size:12.5px; cursor:pointer; position:relative; transition:transform .15s,filter .15s;}
+.promo button:hover{filter:brightness(1.08); transform:translateY(-1px);}
+
+.leaflet-div-icon{background:transparent; border:0;}
+.num-pin{
+  width:26px;height:26px;border-radius:50% 50% 50% 0; transform:rotate(-45deg); background:var(--green-700); border:2px solid #fff;
+  display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,.35);
+}
+.num-pin span{transform:rotate(45deg); color:#fff; font-size:11px; font-weight:700; font-family:var(--mono);}
+.num-pin.start{background:var(--gold);}
+
+.section-divider{
+  margin:26px 20px 0; font-size:12px; color:var(--ink-soft); display:flex; align-items:center; gap:10px;
+  font-family:var(--mono); letter-spacing:.5px; text-transform:uppercase;
+}
+.section-divider::after{content:''; flex:1; height:1px; background:repeating-linear-gradient(to right, var(--line) 0 4px, transparent 4px 8px);}
+
+::-webkit-scrollbar{width:7px;height:7px;}
+::-webkit-scrollbar-thumb{background:var(--line); border-radius:10px;}
+
+/* ================= MODE SELECT SCREEN ================= */
+#modeSelect{
+  min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:48px 20px; background:var(--bg); position:relative; overflow:hidden;
+}
+#modeSelect::before{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background-image:
+    repeating-radial-gradient(circle at 8% 12%, transparent 0 34px, var(--contour) 35px 36px, transparent 37px 70px),
+    repeating-radial-gradient(circle at 92% 88%, transparent 0 46px, var(--contour) 47px 48px, transparent 49px 90px);
+}
+.ms-brand{display:flex; align-items:center; gap:10px; margin-bottom:30px; position:relative;}
+.ms-brand b{font-family:'Cormorant',serif; font-size:20px; font-weight:600;}
+.ms-eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--gold); text-align:center; margin-bottom:10px; position:relative;}
+.ms-title{font-family:'Cormorant',serif; font-size:clamp(28px,4vw,42px); font-weight:600; text-align:center; margin:0 0 10px; line-height:1.15; position:relative; max-width:640px;}
+.ms-sub{font-size:14px; color:var(--ink-soft); text-align:center; max-width:460px; margin:0 0 40px; position:relative;}
+.ms-cards{display:flex; gap:22px; flex-wrap:wrap; justify-content:center; max-width:820px; position:relative;}
+.ms-card{
+  width:340px; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:30px 26px;
+  cursor:pointer; text-align:left; box-shadow:var(--shadow); position:relative; overflow:hidden;
+  transition:transform .22s cubic-bezier(.16,1,.3,1), box-shadow .22s, border-color .22s;
+}
+.ms-card:hover{transform:translateY(-5px); border-color:var(--gold2); box-shadow:0 20px 40px -18px rgba(28,20,9,.32);}
+.ms-card::after{
+  content:''; position:absolute; right:-30px; top:-30px; width:110px; height:110px; border-radius:50%;
+  background:radial-gradient(circle,var(--contour) 0%,transparent 70%);
+}
+.ms-card .ms-num{font-family:var(--mono); font-size:11px; color:var(--gold); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:14px; display:block; position:relative;}
+.ms-card .ms-icon{
+  width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;
+  background:linear-gradient(135deg,var(--green-600),var(--green-700)); color:#fff; position:relative;
+}
+.ms-card.alt .ms-icon{background:linear-gradient(135deg,var(--gold2),var(--gold));}
+.ms-card h3{margin:0 0 8px; font-size:20px; font-weight:600; position:relative;}
+.ms-card p{margin:0 0 16px; font-size:13px; color:var(--ink-soft); line-height:1.55; position:relative;}
+.ms-card ul{margin:0 0 20px; padding:0; list-style:none; display:flex; flex-direction:column; gap:7px; position:relative;}
+.ms-card ul li{font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:8px;}
+.ms-card ul li::before{content:'✦'; color:var(--gold2); font-size:10px;}
+.ms-card .ms-cta{display:inline-flex; align-items:center; gap:7px; font-size:13px; font-weight:700; color:var(--green-700); position:relative;}
+.ms-card .ms-cta svg{transition:transform .18s;}
+.ms-card:hover .ms-cta svg{transform:translateX(4px);}
+@media (max-width:760px){ .ms-card{width:100%; max-width:380px; padding:24px 20px;} }
+
+/* ================= GATEWAY SELECT SCREEN (full-screen step 2) ================= */
+#gatewaySelect{
+  min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:48px 20px; background:var(--bg); position:relative; overflow:hidden;
+}
+#gatewaySelect::before{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background-image:
+    repeating-radial-gradient(circle at 8% 12%, transparent 0 34px, var(--contour) 35px 36px, transparent 37px 70px),
+    repeating-radial-gradient(circle at 92% 88%, transparent 0 46px, var(--contour) 47px 48px, transparent 49px 90px);
+}
+.gwc-back{position:relative; align-self:center; margin-bottom:6px; border:0; background:transparent; color:var(--ink-soft); font-size:12.5px; font-weight:600; cursor:pointer; padding:6px 0;}
+.gwc-back:hover{color:var(--gold);}
+.gwc-cards{display:grid; grid-template-columns:repeat(5,1fr); gap:16px; max-width:1080px; width:100%; position:relative;}
+.gwc-card{
+  position:relative; min-height:190px; padding:26px 20px; background:var(--card); border:1.5px solid var(--line); border-radius:18px;
+  cursor:pointer; text-align:left; box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column; gap:8px;
+  transition:transform .22s cubic-bezier(.16,1,.3,1), box-shadow .22s, border-color .22s; font-family:inherit;
+}
+.gwc-card:hover{transform:translateY(-5px); border-color:var(--gold2); box-shadow:0 20px 40px -18px rgba(28,20,9,.32);}
+.gwc-card.active{border-color:var(--green-600); background:linear-gradient(160deg,var(--card),var(--green-50)); box-shadow:0 10px 28px -16px rgba(176,125,58,.4);}
+.gwc-icon{font-size:32px;}
+.gwc-card strong{font-family:'Cormorant',Georgia,serif; font-size:21px; font-weight:700;}
+.gwc-sub{font-size:11.5px; color:var(--ink-soft); line-height:1.5;}
+@media (max-width:900px){ .gwc-cards{grid-template-columns:1fr 1fr;} }
+@media (max-width:560px){ .gwc-cards{grid-template-columns:1fr;} }
+
+/* compact "current gateway" indicator inside the controls bar */
+.gateway-mini{display:flex; align-items:center; gap:5px; border:1px solid var(--gold2); background:var(--green-50); color:var(--ink); border-radius:9px; padding:10px 14px; font:600 12.5px inherit; cursor:pointer; white-space:nowrap;}
+.gateway-mini b{font-weight:700;}
+.gateway-mini em{font-style:normal; color:var(--gold); font-size:10.5px; text-decoration:underline; margin-left:3px;}
+.gateway-mini:hover{border-color:var(--gold);}
+
+/* ---------- destination picker popup ---------- */
+.dest-modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(15,12,7,0);display:none;align-items:center;justify-content:center;padding:20px;pointer-events:none;transition:background .3s;}
+.dest-modal-overlay.open{display:flex;background:rgba(15,12,7,.62);pointer-events:all;}
+.dest-modal{width:min(760px,100%);max-height:min(680px,88vh);background:var(--card);border-radius:20px;box-shadow:0 30px 70px -20px rgba(28,20,9,.55);display:flex;flex-direction:column;overflow:hidden;transform:translateY(14px);opacity:0;transition:transform .3s cubic-bezier(.16,1,.3,1),opacity .3s;}
+.dest-modal-overlay.open .dest-modal{transform:translateY(0);opacity:1;}
+.dest-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:22px 24px 14px;border-bottom:1px solid var(--line);}
+.dest-modal-kicker{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:6px;}
+.dest-modal-head h3{margin:0 0 6px;font-size:22px;font-weight:600;}
+.dest-modal-head p{margin:0;font-size:12.5px;color:var(--ink-soft);max-width:480px;}
+.dest-modal-close{border:0;background:var(--bg);width:32px;height:32px;border-radius:50%;font-size:14px;color:var(--ink-soft);cursor:pointer;flex-shrink:0;}
+.dest-modal-close:hover{background:var(--line);}
+.dest-modal-search{padding:14px 24px 0;}
+.dest-modal-search input{width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:13.5px;font-family:inherit;}
+.dest-picks{display:flex;flex-wrap:wrap;gap:6px;padding:10px 24px 0;max-height:96px;overflow-y:auto;}
+.dest-pick-chip{display:flex;align-items:center;gap:3px;background:rgba(176,125,58,.12);border:1px solid var(--gold2);border-radius:999px;padding:4px 5px 4px 11px;font-size:11.5px;color:var(--ink);white-space:nowrap;}
+.dest-pick-chip .dpc-num{font-weight:700;color:var(--gold);margin-right:1px;}
+.dest-pick-chip button{border:0;background:transparent;cursor:pointer;color:var(--ink-soft);font-size:11px;padding:3px 4px;line-height:1;border-radius:50%;}
+.dest-pick-chip button:hover{color:var(--ink);background:rgba(28,20,9,.08);}
+.dest-pick-chip button:disabled{opacity:.3;cursor:default;}
+.dest-pick-chip button:disabled:hover{background:transparent;}
+.dest-modal-tabs{display:flex;gap:8px;padding:12px 24px 0;flex-wrap:wrap;}
+.dest-modal-tab{border:1px solid var(--line);background:var(--bg);color:var(--ink-soft);border-radius:999px;padding:5px 13px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;}
+.dest-modal-tab.active{background:var(--green-600);border-color:var(--green-600);color:#fff;}
+.dest-modal-grid{flex:1;overflow-y:auto;padding:16px 24px 6px;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start;}
+@media (max-width:560px){ .dest-modal-grid{grid-template-columns:1fr;} }
+.dest-card{position:relative;border:1.5px solid var(--line);border-radius:13px;padding:11px 13px;cursor:pointer;background:var(--bg);transition:border-color .15s,background .15s;text-align:left;font-family:inherit;}
+.dest-card:hover{border-color:var(--gold2);}
+.dest-card .dc-top{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.dest-card b{font-size:13.5px;font-weight:600;}
+.dest-card .dc-meta{font-size:10.5px;color:var(--ink-soft);margin-top:2px;}
+.dest-card .dc-tag{font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.dest-card .dc-badge{display:inline-block;font-size:9px;letter-spacing:.5px;text-transform:uppercase;font-weight:700;color:var(--green-600);background:rgba(176,125,58,.13);border-radius:5px;padding:2px 6px;margin-top:6px;}
+.dest-empty-note{grid-column:1/-1;text-align:center;color:var(--ink-soft);font-size:12.5px;padding:30px 10px;}
+.dest-major-bar{flex:none;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:10px 24px;background:var(--bg);}
+.dest-major-bar .dmb-label{display:block;font-size:12px;color:var(--ink-soft);font-weight:600;margin-bottom:8px;}
+.dest-major-bar .dmb-label::before{content:'✦ ';color:var(--gold);}
+.dmb-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;}
+.dmb-chip{flex:none;display:flex;align-items:center;gap:5px;border:1px solid var(--gold2);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 13px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;transition:background .15s,transform .15s;}
+.dmb-chip:hover{background:var(--green-50);transform:translateY(-1px);}
+.dmb-chip .dmb-plus{color:var(--gold);font-weight:800;}
+.dmb-empty{font-size:11.5px;color:var(--ink-soft);}
+.dest-modal-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 24px;border-top:1px solid var(--line);background:var(--card);}
+.dest-modal-footer span{font-size:12px;color:var(--ink-soft);}
+.dest-modal-footer .btn-primary{padding:10px 22px;}
+
+/* mode switch pill in topbar */
+.mode-switch{display:flex; border:1px solid var(--line); border-radius:20px; overflow:hidden; font-family:var(--mono);}
+.mode-switch button{border:0; background:var(--card); color:var(--ink-soft); font-size:11px; font-weight:600; letter-spacing:.3px; padding:7px 12px; cursor:pointer; transition:background .15s,color .15s;}
+.mode-switch button.active{background:var(--green-600); color:#fff;}
+
+/* ================= MODE VISIBILITY ================= */
+body.mode-custom [data-mode="packages"]{display:none !important;}
+body.mode-packages [data-mode="custom"]{display:none !important;}
+
+/* ================= FIXED-HEIGHT APP SHELL (map stays put, side content scrolls) ================= */
+#appShell{display:flex; flex-direction:column; height:100vh; overflow:hidden;}
+#appShell .topbar{flex:0 0 auto; position:static;}
+#appShell .controls{flex:0 0 auto;}
+#appShell .app-main{flex:1 1 auto; min-height:0; overflow:hidden; display:flex; flex-direction:column;}
+#appShell .layout{flex:1 1 auto; min-height:0; height:100%;}
+#appShell .layout > *{min-height:0; height:100%;}
+.panel-col{display:flex; flex-direction:column; gap:16px; min-height:0; height:100%;}
+.panel-col .panel{min-height:0;}
+.panel-col .panel.grow{flex:1 1 auto; display:flex; flex-direction:column; min-height:0;}
+.scroll-body{flex:1 1 auto; overflow-y:auto; min-height:0; padding-right:2px;}
+.mini-label{font-size:11px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.6px; font-family:var(--mono); margin:0 0 8px; display:block;}
+.pkg-empty-hint{font-size:12.5px; color:var(--ink-soft); text-align:center; padding:34px 16px; line-height:1.6; flex:1 1 auto; display:flex; align-items:center; justify-content:center;}
+.map-col{display:flex; flex-direction:column; height:100%; min-height:0;}
+.map-col .map-wrap{flex:1 1 auto; display:flex; flex-direction:column; min-height:0;}
+.map-col .map-wrap #map{flex:1 1 auto; height:auto; min-height:0;}
+
+@media (max-width:1180px){
+  #appShell{height:auto; overflow:visible;}
+  #appShell .app-main{overflow-y:visible;}
+  #appShell .layout > *{height:auto;}
+  .panel-col{height:auto;}
+  .panel-col .panel.grow .scroll-body,
+  .panel-col .panel.grow .stop-list,
+  .panel-col .panel.grow .itinerary-list{max-height:360px;}
+  .map-col{height:auto;}
+  .map-col .map-wrap #map{height:340px;}
+}
+@media (max-width:400px){
+  .map-col .map-wrap #map{height:300px;}
+}
+</style>
+</head>
+<body data-theme="light">
+
+<div id="modeSelect">
+  <div class="ms-brand">
+    <svg width="30" height="30" viewBox="0 0 40 40" fill="none">
+      <path d="M2 30L14 12L20 21L25 14L38 30H2Z" fill="#b07d3a"/>
+      <path d="M14 12L20 21L17.5 24.5L11 15.5L14 12Z" fill="#6b4415"/>
+      <path d="M25 14L38 30H29L23 20.5L25 14Z" fill="#6b4415" opacity=".55"/>
+    </svg>
+    <b>Luxotic India</b>
+  </div>
+  <span class="ms-eyebrow">Expedition Planner</span>
+  <h1 class="ms-title">How would you like to plot your Himalaya?</h1>
+  <p class="ms-sub">Two ways to get moving — pick whichever fits how you like to travel. You can switch anytime.</p>
+  <div class="ms-cards">
+    <div class="ms-card" onclick="chooseMode('custom')">
+      <span class="ms-num">Option 01</span>
+      <div class="ms-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/><path d="M12 3v1M12 20v1M3 12h1M20 12h1"/></svg>
+      </div>
+      <h3>Build It Yourself</h3>
+      <p>Pick a starting gateway, drop destinations on the map, drag to reorder, and watch a live day-by-day itinerary take shape.</p>
+      <ul>
+        <li>Full control over every stop</li>
+        <li>Real road distances &amp; drive times</li>
+        <li>Instant cost estimate</li>
+      </ul>
+      <span class="ms-cta">Start Building <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>
+    </div>
+    <div class="ms-card alt" onclick="chooseMode('packages')">
+      <span class="ms-num">Option 02</span>
+      <div class="ms-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+      </div>
+      <h3>Choose From Our Packages</h3>
+      <p>Browse ready-made itineraries curated by our team for popular Himachal routes — planned, priced and proven.</p>
+      <ul>
+        <li>Curated day-by-day plans</li>
+        <li>Transparent per-person pricing</li>
+        <li>Instant quote on WhatsApp</li>
+      </ul>
+      <span class="ms-cta">Browse Packages <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>
+    </div>
+  </div>
+</div>
+
+<div id="gatewaySelect" style="display:none;">
+  <button class="gwc-back" onclick="backToModeSelect()">← Change plan style</button>
+  <div class="ms-brand">
+    <svg width="30" height="30" viewBox="0 0 40 40" fill="none">
+      <path d="M2 30L14 12L20 21L25 14L38 30H2Z" fill="#b07d3a"/>
+      <path d="M14 12L20 21L17.5 24.5L11 15.5L14 12Z" fill="#6b4415"/>
+      <path d="M25 14L38 30H29L23 20.5L25 14Z" fill="#6b4415" opacity=".55"/>
+    </svg>
+    <b>Luxotic India</b>
+  </div>
+  <span class="ms-eyebrow">Step 2 of 2 · Expedition Planner</span>
+  <h1 class="ms-title">Where are you starting from?</h1>
+  <p class="ms-sub">Pick your gateway city — we'll shape the whole route, recommendations and pricing around it.</p>
+  <div class="gwc-cards" id="gwcCards"></div>
+</div>
+
+<div id="appShell" style="display:none;">
+<div class="topbar">
+  <div class="brand">
+    <svg width="34" height="34" viewBox="0 0 40 40" fill="none">
+      <path d="M2 30L14 12L20 21L25 14L38 30H2Z" fill="#b07d3a"/>
+      <path d="M14 12L20 21L17.5 24.5L11 15.5L14 12Z" fill="#6b4415"/>
+      <path d="M25 14L38 30H29L23 20.5L25 14Z" fill="#6b4415" opacity=".55"/>
+    </svg>
+    <div class="brand-text">
+      <b>Luxotic India</b>
+      <span>Explore · Plan · Experience</span>
+    </div>
+  </div>
+  <div class="page-title">
+    <span class="eyebrow">Expedition Planner · Live Pricing</span>
+    <h1>Plot your Himalaya</h1>
+    <p>120 places, real road distances, day-wise cost — built as you click.</p>
+  </div>
+  <div class="top-actions">
+    <div class="mode-switch">
+      <button id="modeBtnCustom" onclick="chooseMode('custom')">Build Yourself</button>
+      <button id="modeBtnPackages" onclick="chooseMode('packages')">Our Packages</button>
+    </div>
+    <div class="seg">
+      <button id="themeLight" class="active" onclick="setTheme('light')">☀ Light</button>
+      <button id="themeDark" onclick="setTheme('dark')">☾ Dark</button>
+    </div>
+    <div class="avatar-chip"><span class="dot">HE</span> Luxotic India</div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="field" style="max-width:220px;">
+    <label>Gateway</label>
+    <button class="gateway-mini" id="gatewayMini" onclick="openGatewaySelect()" style="width:100%;">📍 <b id="gatewayMiniName">Set gateway</b><em>Change</em></button>
+  </div>
+  <div class="field" data-mode="custom" style="max-width:170px;">
+    <label>Trip Type</label>
+    <div class="ctrl">
+      <select id="tripType">
+        <option>Road Trip</option>
+        <option>Adventure</option>
+        <option>Family</option>
+        <option>Honeymoon</option>
+        <option>Pilgrimage</option>
+        <option>Offbeat</option>
+      </select>
+    </div>
+  </div>
+  <div class="field" data-mode="custom" style="max-width:180px;">
+    <label>Duration</label>
+    <div class="ctrl">
+      <select id="duration">
+        <option value="0">Auto (recommended)</option>
+        <option value="1">1 Day / 0 Night</option>
+        <option value="2">2 Days / 1 Night</option>
+        <option value="3">3 Days / 2 Nights</option>
+        <option value="4">4 Days / 3 Nights</option>
+        <option value="5">5 Days / 4 Nights</option>
+        <option value="6">6 Days / 5 Nights</option>
+        <option value="7">7 Days / 6 Nights</option>
+        <option value="8">8 Days / 7 Nights</option>
+        <option value="10">10 Days / 9 Nights</option>
+      </select>
+    </div>
+  </div>
+  <div class="field" style="max-width:150px;">
+    <label>Travelers</label>
+    <div class="ctrl stepper">
+      <button onclick="changePax(-1)">−</button>
+      <span id="paxLabel" style="flex:1;text-align:center;font-size:13.5px;">2 Adults</span>
+      <button onclick="changePax(1)">+</button>
+    </div>
+  </div>
+  <button class="btn-primary" data-mode="custom" id="generateBtn" onclick="generateRoute()" disabled>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+    Generate Route
+  </button>
+</div>
+
+<div class="app-main">
+<div class="layout">
+
+  <!-- LEFT COLUMN -->
+  <div class="panel-col">
+    <!-- CUSTOM MODE: Add destinations -->
+    <div class="panel grow" data-mode="custom">
+      <h3>Add Destinations</h3>
+      <div class="search-box">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="searchInput" placeholder="Loading places…" disabled oninput="renderSearch()" onfocus="renderSearch()">
+        <div class="search-results" id="searchResults"></div>
+      </div>
+      <div class="stop-list" id="stopList"></div>
+      <div class="panel-footer">
+        <span id="stopCountLabel">0 stops added</span>
+        <button class="link-btn danger" onclick="clearAll()">Clear All</button>
+      </div>
+      <div class="promo">
+        <b>120 places, 12 districts</b>
+        <p>Every stop below is pulled live from the Luxotic India places database — real coordinates, real road distances.</p>
+        <button onclick="showToast('Browse the full catalogue on luxoticindia.com')">Browse All Places</button>
+      </div>
+    </div>
+
+    <!-- PACKAGES MODE: pick destination + suggested packages -->
+    <div class="panel grow" data-mode="packages">
+      <h3>Choose Your Destination</h3>
+      <div class="scroll-body">
+        <div id="destPanel" style="display:none;">
+          <span class="mini-label">Popular Destinations from <span id="destPanelGw"></span></span>
+          <select id="destSelect" onchange="onDestinationChange()">
+            <option value="">Choose a destination…</option>
+          </select>
+        </div>
+        <div id="suggestedPkgsPanel" style="display:none; margin-top:16px;">
+          <span class="mini-label">Suggested Packages</span>
+          <div class="pkg-cards" id="pkgCards"></div>
+          <div class="no-pkg-note" id="noPkgNote" style="display:none;"></div>
+        </div>
+        <div class="pkg-empty-hint" id="pkgLeftEmptyHint">Pick a starting gateway above to see curated packages for that route.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: Map (always visible, fixed in place) -->
+  <div class="map-col">
+    <div class="map-wrap">
+      <div class="map-toggle">
+        <button id="tileMap" class="active" onclick="setTiles('map')">Map</button>
+        <button id="tileSat" onclick="setTiles('sat')">Satellite</button>
+      </div>
+      <div id="map"></div>
+      <div class="empty-map-hint" id="mapHint">
+        <b>Loading live prices…</b>
+        <span>Fetching current places and vehicle rates from Luxotic India.</span>
+      </div>
+      <div class="stat-bar" data-mode="custom">
+        <div class="stat"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></div><div><b id="statDistance">—</b><span>Total Distance</span></div></div>
+        <div class="stat"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div><div><b id="statDuration">—</b><span>Total Duration</span></div></div>
+        <div class="stat"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div><b id="statCost">—</b><span>Est. Cost</span></div></div>
+        <div class="stat"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12Z"/></svg></div><div><b id="statSeason">—</b><span>Best Time</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="panel-col">
+    <!-- CUSTOM MODE: itinerary + route summary -->
+    <div class="panel grow" data-mode="custom">
+      <h3>Your Itinerary</h3>
+      <div class="itinerary-list" id="itineraryList">
+        <div style="font-size:12.5px;color:var(--ink-soft);text-align:center;padding:30px 10px;">Your day-by-day plan will show up here after you generate a route.</div>
+      </div>
+    </div>
+    <div class="panel ticket-panel" data-mode="custom">
+      <h3>Route Summary</h3>
+      <div class="ticket-code">HE · ROUTE-01</div>
+      <div class="summary-row"><span>Total Stops</span><b id="sumStops">0</b></div>
+      <div class="summary-row"><span>Total Distance</span><b id="sumDistance">—</b></div>
+      <div class="summary-row"><span>Total Duration</span><b id="sumDuration">—</b></div>
+      <div class="summary-row"><span>Recommended Vehicle</span><b id="sumVehicle">—</b></div>
+      <div class="summary-row"><span>Estimated Cost</span><b id="sumCost">—</b></div>
+      <div class="ticket-perf"></div>
+      <button class="save-btn" id="waBtn" onclick="sendToWhatsApp()" disabled style="background:#25D366;margin-bottom:8px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.553 4.116 1.522 5.852L.057 23.998l6.305-1.443A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.89 0-3.663-.52-5.185-1.427l-.372-.22-3.763.863.933-3.66-.242-.38A9.964 9.964 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        Get Quote on WhatsApp
+      </button>
+      <button class="save-btn" onclick="saveRoute()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+        Save This Route
+      </button>
+    </div>
+
+    <!-- PACKAGES MODE: package detail -->
+    <div class="panel pkg-empty-hint" data-mode="packages" id="pkgDetailEmptyHint">Select a package on the left to see the full day-by-day plan, inclusions and price here.</div>
+    <div class="panel grow" data-mode="packages" id="pkgDetailPanel" style="display:none;">
+      <div class="scroll-body">
+        <div class="pkg-detail-header">
+          <img id="pkgDetailImg" src="" alt="">
+          <div>
+            <h3 id="pkgDetailName" style="margin:0 0 4px;"></h3>
+            <div class="pkg-detail-meta" id="pkgDetailMeta"></div>
+          </div>
+        </div>
+        <div class="pkg-inc-exc">
+          <div>
+            <h4>Inclusions</h4>
+            <ul id="pkgDetailInclusions"></ul>
+          </div>
+          <div>
+            <h4>Exclusions</h4>
+            <ul id="pkgDetailExclusions"></ul>
+          </div>
+        </div>
+        <div id="pkgDetailItinerary"></div>
+      </div>
+      <div class="pkg-pay-block">
+        <div class="pkg-pay-label">Choose Amount to Pay</div>
+        <div class="pkg-pay-options">
+          <div class="pkg-pay-opt selected" id="pkgPayAdv40" onclick="selectPkgPayMode('adv40')">
+            <div class="pkg-pay-opt-name">40% Advance</div>
+            <div class="pkg-pay-opt-val" id="pkgAdv40Amt">—</div>
+          </div>
+          <div class="pkg-pay-opt" id="pkgPayAdv60" onclick="selectPkgPayMode('adv60')">
+            <div class="pkg-pay-opt-name">60% Advance</div>
+            <div class="pkg-pay-opt-val" id="pkgAdv60Amt">—</div>
+          </div>
+        </div>
+        <div class="pkg-pay-row"><span>Total package cost</span><b id="pkgPayTotal">—</b></div>
+        <div class="pkg-pay-row"><span>You are paying now</span><b id="pkgPayNow" style="color:var(--gold)">—</b></div>
+        <div class="pkg-pay-guest">
+          <input type="text" id="pkgGuestName" placeholder="Full name" autocomplete="name" oninput="this.classList.remove('error')">
+          <input type="tel" id="pkgGuestPhone" placeholder="Mobile number" autocomplete="tel" oninput="this.classList.remove('error')">
+        </div>
+        <button class="pay-btn" id="pkgPayBtn" onclick="initiatePkgPayment()">💳 Pay & Book Now</button>
+      </div>
+      <button class="save-btn" style="background:#25D366;" onclick="sendPkgToWhatsApp()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.553 4.116 1.522 5.852L.057 23.998l6.305-1.443A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.89 0-3.663-.52-5.185-1.427l-.372-.22-3.763.863.933-3.66-.242-.38A9.964 9.964 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        Get Quote on WhatsApp
+      </button>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="dest-modal-overlay" id="destModalOverlay" onclick="if(event.target===this) closeDestModal()">
+  <div class="dest-modal" role="dialog" aria-modal="true" aria-labelledby="destModalTitle">
+    <div class="dest-modal-head">
+      <div>
+        <div class="dest-modal-kicker">Build It Yourself · <span id="destModalGateway"></span></div>
+        <h3 id="destModalTitle">Carve out your package</h3>
+        <p>We've picked the must-see places near your gateway — tap to add. Search if you want something specific.</p>
+      </div>
+      <button class="dest-modal-close" onclick="closeDestModal()">✕</button>
+    </div>
+    <div class="dest-modal-search"><input id="destModalSearch" placeholder="Search all 120 places…" oninput="renderDestModalGrid()"></div>
+    <div class="dest-picks" id="destPicksBox" style="display:none;"></div>
+    <div class="dest-major-bar" id="destMajorBar">
+      <span class="dmb-label">Not just here — jump to another major destination anytime</span>
+      <div class="dmb-chips" id="dmbChips"></div>
+    </div>
+    <div class="dest-modal-tabs" id="destModalTabs">
+      <button class="dest-modal-tab active" id="destTabRecommended" onclick="setDestModalTab('recommended')">✦ Recommended for you</button>
+      <button class="dest-modal-tab" id="destTabAll" onclick="setDestModalTab('all')">All 120 places</button>
+    </div>
+    <div class="dest-modal-grid" id="destModalGrid"></div>
+    <div class="dest-modal-footer">
+      <span id="destModalCount">0 places selected</span>
+      <button class="btn-primary" id="destModalContinue" onclick="confirmDestModal()" disabled>Build my route →</button>
+    </div>
+  </div>
+</div>
+</div><!-- /appShell -->
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="assets/js/distance-matrix.js"></script>
+<script src="assets/js/pricing-engine.js"></script>
+<!-- Razorpay Script -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+const DB_FALLBACK = {"places": [{"id": "andretta", "name": "Andretta", "lat": 32.0833, "lng": 76.55, "district": "Kangra", "region": "Kangra Valley", "category": "art-village", "segment": "culture", "tag": "Pottery center, artists' heritage, serene village life.", "season": "Mar–Jun, Sep–Nov"}, {"id": "annandale", "name": "Annandale", "lat": 31.1097, "lng": 77.1645, "district": "Shimla", "region": "Shimla Hills", "category": "museum", "segment": "heritage", "tag": "Army Heritage Museum, golf course, well-manicured grounds.", "season": "Mar–Jun, Sep–Nov, Dec–Feb (snow)"}, {"id": "atal-tunnel-viewpoint", "name": "Atal Tunnel Viewpoint", "lat": 32.364, "lng": 77.131, "district": "Kullu", "region": "Lahaul Access", "category": "scenic", "segment": "viewpoint", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov"}, {"id": "awah-devi-temple", "name": "Awah Devi Temple", "lat": 31.6333, "lng": 76.5167, "district": "Hamirpur", "region": "Hamirpur", "category": "temple", "segment": "spiritual", "tag": "Hilltop temple, spiritual site, scenic views.", "season": "Oct–Mar"}, {"id": "bada-dev-kamrunag", "name": "Bada Dev Kamrunag", "lat": 31.505, "lng": 77.06, "district": "Mandi", "region": "Mandi", "category": "temple", "segment": "spiritual", "tag": "Spiritual temple, historical legends, treasure site.", "season": "Mar–Jun, Sep–Nov"}, {"id": "bahu-village", "name": "Bahu Village", "lat": 31.5583, "lng": 77.35, "district": "Kullu", "region": "Seraj Region", "category": "village", "segment": "culture", "tag": "Kath-Kuni architecture, Jibhi waterfall, traditional village life.", "season": "Mar–Jun, Sep–Nov"}, {"id": "baijnath-temple", "name": "Baijnath Temple", "lat": 32.0522, "lng": 76.6667, "district": "Kangra", "region": "Kangra Valley", "category": "temple", "segment": "spiritual", "tag": "Nagara architecture, historical Shiva temple, spiritual site.", "season": "Mar–Jun, Sep–Nov"}, {"id": "barog", "name": "Barog", "lat": 30.8833, "lng": 77.0833, "district": "Solan", "region": "Solan", "category": "hillstation", "segment": "nature", "tag": "Railway heritage, mountain views, peaceful hill station.", "season": "Oct–Mar"}, {"id": "barot-valley", "name": "Barot Valley", "lat": 32.0392, "lng": 76.8443, "district": "Mandi", "region": "Uhl River Valley", "category": "scenic", "segment": "nature", "tag": "Trout fishing, Uhl river, cedar forests, hydel project history", "season": "Mar–Jun, Sep–Nov"}, {"id": "bharmour", "name": "Bharmour", "lat": 32.4439, "lng": 76.5133, "district": "Chamba", "region": "Chamba Valley", "category": "heritage", "segment": "culture", "tag": "Ancient temples, Chaurasi complex, religious heritage.", "season": "Apr–Jun, Sep–Nov"}, {"id": "bhuri-singh-museum", "name": "Bhuri Singh Museum", "lat": 32.5533, "lng": 76.1267, "district": "Chamba", "region": "Chamba Valley", "category": "museum", "segment": "heritage", "tag": "Historical artifacts, Chamba paintings, royal heritage.", "season": "Apr–Jun, Sep–Nov"}, {"id": "bijli-mahadev", "name": "Bijli Mahadev", "lat": 31.9772, "lng": 77.1644, "district": "Kullu", "region": "Kullu Valley", "category": "temple", "segment": "spiritual", "tag": "Lightning-attracting pole, panoramic valley view, spiritual significance.", "season": "Mar–Jun, Sep–Nov"}, {"id": "bir-billing", "name": "Bir Billing", "lat": 32.0461, "lng": 76.7161, "district": "Kangra", "region": "Kangra Valley", "category": "adventure", "segment": "adventure", "tag": "Paragliding, Tibetan monasteries, cafes, sunset viewpoints", "season": "Mar–Jun, Sep–Nov"}, {"id": "chadwick-falls", "name": "Chadwick Falls", "lat": 31.1215, "lng": 77.1558, "district": "Shimla", "region": "Shimla Hills", "category": "nature", "segment": "nature", "tag": "Waterfall, trekking, dense forest surroundings.", "season": "Mar–Jun, Sep–Nov, Dec–Feb (snow)"}, {"id": "chail", "name": "Chail", "lat": 30.969, "lng": 77.196, "district": "Solan", "region": "Shimla Hills", "category": "scenic", "segment": "hillstation", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Oct–Mar"}, {"id": "chalal", "name": "Chalal", "lat": 32.0078, "lng": 77.3294, "district": "Kullu", "region": "Parvati Valley", "category": "village", "segment": "culture", "tag": "River-side trails, pine forests, cafe culture.", "season": "Mar–Jun, Sep–Nov"}, {"id": "chamba", "name": "Chamba Town", "lat": 32.556, "lng": 76.126, "district": "Chamba", "region": "Chamba Valley", "category": "core", "segment": "town", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Apr–Jun, Sep–Nov"}, {"id": "chamera-lake", "name": "Chamera Lake", "lat": 32.5458, "lng": 76.195, "district": "Chamba", "region": "Chamba Valley", "category": "lake", "segment": "nature", "tag": "Boating, lakeside views, water sports.", "season": "Apr–Jun, Sep–Nov"}, {"id": "chandratal-lake", "name": "Chandratal Lake", "lat": 32.482, "lng": 77.615, "district": "Lahaul & Spiti", "region": "Spiti Valley", "category": "scenic", "segment": "lake", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Jun–Sep"}, {"id": "charang-valley", "name": "Charang Valley", "lat": 31.5, "lng": 78.4333, "district": "Kinnaur", "region": "Kinnaur Valley", "category": "valley", "segment": "nature", "tag": "Ancient monastery, remote trekking, rugged wilderness.", "season": "May–Jun, Sep–Oct"}, {"id": "chintpurni-temple", "name": "Chintpurni Temple", "lat": 31.7167, "lng": 76.1333, "district": "Una", "region": "Una", "category": "temple", "segment": "spiritual", "tag": "Shakti Peetha, spiritual pilgrimage, religious site.", "season": "Oct–Mar"}, {"id": "chitkul", "name": "Chitkul", "lat": 31.346, "lng": 78.436, "district": "Kinnaur", "region": "Baspa Valley", "category": "scenic", "segment": "village", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "May–Jun, Sep–Oct"}, {"id": "churdhar-peak", "name": "Churdhar Peak", "lat": 30.8833, "lng": 77.4, "district": "Sirmaur", "region": "Sirmaur", "category": "trek", "segment": "adventure", "tag": "Summit trek, religious site, 360-degree views.", "season": "Oct–Mar (lower), May–Jun (peaks)"}, {"id": "craignano-nature-park", "name": "Craignano Nature Park", "lat": 31.1275, "lng": 77.2115, "district": "Shimla", "region": "Shimla Hills", "category": "park", "segment": "nature", "tag": "Italian architecture, landscaped gardens, quiet walking trails.", "season": "Mar–Jun, Sep–Nov, Dec–Feb (snow)"}, {"id": "dagshai", "name": "Dagshai", "lat": 30.8667, "lng": 77.05, "district": "Solan", "region": "Solan", "category": "heritage", "segment": "heritage", "tag": "Colonial cantonment, military history, peaceful town.", "season": "Oct–Mar"}, {"id": "dalhousie", "name": "Dalhousie", "lat": 32.538, "lng": 75.97, "district": "Chamba", "region": "Chamba Valley", "category": "scenic", "segment": "hillstation", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Apr–Jun, Sep–Nov"}, {"id": "dera-baba-rudru", "name": "Dera Baba Rudru", "lat": 31.45, "lng": 76.2833, "district": "Una", "region": "Una", "category": "spiritual", "segment": "spiritual", "tag": "Spiritual site, religious history, calm atmosphere.", "season": "Oct–Mar"}, {"id": "dhankar-lake", "name": "Dhankar Lake", "lat": 32.092, "lng": 78.215, "district": "Lahaul & Spiti", "region": "Spiti Valley", "category": "trek", "segment": "lake", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Jun–Sep"}, {"id": "dharamshala", "name": "Dharamshala", "lat": 32.219, "lng": 76.3234, "district": "Kangra", "region": "Kangra Valley", "category": "core", "segment": "heritage", "tag": "Cricket stadium, tea gardens, war memorial, local markets", "season": "Mar–Jun, Sep–Nov"}, {"id": "fagu", "name": "Fagu", "lat": 31.1005, "lng": 77.276, "district": "Shimla", "region": "Shimla Hills", "category": "scenic", "segment": "village", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov, Dec–Feb (snow)"}, {"id": "gilbert-trail", "name": "Gilbert Trail", "lat": 30.8833, "lng": 76.9667, "district": "Solan", "region": "Solan", "category": "trek", "segment": "adventure", "tag": "Nature trail, birdwatching, sunset views.", "season": "Oct–Mar"}, {"id": "gobind-sagar-lake", "name": "Gobind Sagar Lake", "lat": 31.4167, "lng": 76.4333, "district": "Una", "region": "Una", "category": "lake", "segment": "nature", "tag": "Massive reservoir, water sports, lake landscapes.", "season": "Oct–Mar"}, {"id": "great-himalayan-national-park", "name": "Great Himalayan National Park", "lat": 31.7333, "lng": 77.4, "district": "Kullu", "region": "Kullu Valley", "category": "national-park", "segment": "nature", "tag": "Trekking, biodiversity spotting, pristine mountain wilderness.", "season": "Mar–Jun, Sep–Nov"}, {"id": "green-valley", "name": "Green Valley", "lat": 31.1025, "lng": 77.2645, "district": "Shimla", "region": "Shimla Hills", "category": "scenic", "segment": "viewpoint", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov, Dec–Feb (snow)"}, {"id": "gue-mummy-village", "name": "Gue Mummy Village", "lat": 32.1833, "lng": 78.6167, "district": "Lahaul & Spiti", "region": "Spiti Valley", "category": "heritage", "segment": "culture", "tag": "Naturally preserved mummy, monastery, desert landscapes.", "season": "Jun–Sep"}, {"id": "habban-valley", "name": "Habban Valley", "lat": 30.8, "lng": 77.35, "district": "Sirmaur", "region": "Sirmaur", "category": "valley", "segment": "nature", "tag": "Orchards, valley views, quiet nature.", "season": "Oct–Mar (lower), May–Jun (peaks)"}, {"id": "hadimba-temple", "name": "Hadimba Temple", "lat": 32.2485, "lng": 77.185, "district": "Kullu", "region": "Kullu Valley", "category": "spiritual", "segment": "temple", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov"}, {"id": "haripurdhar", "name": "Haripurdhar", "lat": 30.8667, "lng": 77.4333, "district": "Sirmaur", "region": "Sirmaur", "category": "village", "segment": "culture", "tag": "Spiritual temple, regional history, mountain scenery.", "season": "Oct–Mar (lower), May–Jun (peaks)"}, {"id": "hatu-peak", "name": "Hatu Peak", "lat": 31.271, "lng": 77.465, "district": "Shimla", "region": "Upper Shimla", "category": "adventure", "segment": "trek", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov, Dec–Feb (snow)"}, {"id": "hikkim", "name": "Hikkim", "lat": 32.325, "lng": 78, "district": "Lahaul & Spiti", "region": "Spiti Valley", "category": "village", "segment": "culture", "tag": "Highest post office, village culture, barren mountain views.", "season": "Jun–Sep"}, {"id": "jakhu-temple", "name": "Jakhu Temple", "lat": 31.106, "lng": 77.184, "district": "Shimla", "region": "Shimla Hills", "category": "spiritual", "segment": "temple", "tag": "Hilltop temple, giant Hanuman statue, forest trails, city views", "season": "Mar–Jun, Sep–Nov, Dec–Feb (snow)"}, {"id": "jalori-pass", "name": "Jalori Pass", "lat": 31.53, "lng": 77.415, "district": "Kullu", "region": "Seraj Region", "category": "adventure", "segment": "pass", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov"}, {"id": "jamu-peak", "name": "Jamu Peak", "lat": 30.8833, "lng": 77.4167, "district": "Sirmaur", "region": "Sirmaur", "category": "trek", "segment": "adventure", "tag": "Summit trek, scenic vistas, mountain exploration.", "season": "Oct–Mar (lower), May–Jun (peaks)"}, {"id": "jana-waterfall", "name": "Jana Waterfall", "lat": 32.1001, "lng": 77.195, "district": "Kullu", "region": "Kullu Valley", "category": "nature", "segment": "nature", "tag": "Waterfall, traditional local cuisine, forest views.", "season": "Mar–Jun, Sep–Nov"}, {"id": "janjehli", "name": "Janjehli", "lat": 31.365, "lng": 77.21, "district": "Mandi", "region": "Mandi", "category": "trek", "segment": "nature", "tag": "Roofless Shikari Devi temple, alpine meadows, panoramic trekking, snowfall", "season": "Mar–Jun, Sep–Nov"}, {"id": "jibhi", "name": "Jibhi", "lat": 31.581, "lng": 77.351, "district": "Kullu", "region": "Seraj Region", "category": "scenic", "segment": "village", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov"}, {"id": "kalatop-wildlife-sanctuary", "name": "Kalatop Wildlife Sanctuary", "lat": 32.5539, "lng": 76.0694, "district": "Chamba", "region": "Chamba Valley", "category": "wildlife", "segment": "nature", "tag": "Dense pine forests, wildlife spotting, mountain views.", "season": "Apr–Jun, Sep–Nov"}, {"id": "kalga", "name": "Kalga", "lat": 32.0006, "lng": 77.465, "district": "Kullu", "region": "Parvati Valley", "category": "village", "segment": "culture", "tag": "Wooden houses, apple orchards, quiet village atmosphere.", "season": "Mar–Jun, Sep–Nov"}, {"id": "kalpa", "name": "Kalpa", "lat": 31.539, "lng": 78.254, "district": "Kinnaur", "region": "Kinnaur Valley", "category": "scenic", "segment": "village", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "May–Jun, Sep–Oct"}, {"id": "kamrunag-lake", "name": "Kamrunag Lake", "lat": 31.5, "lng": 77.0667, "district": "Mandi", "region": "Mandi", "category": "lake", "segment": "spiritual", "tag": "Sacred lake, spiritual legends, trekking.", "season": "Mar–Jun, Sep–Nov"}, {"id": "kangra-fort", "name": "Kangra Fort", "lat": 32.0913, "lng": 76.2573, "district": "Kangra", "region": "Kangra Valley", "category": "fort", "segment": "heritage", "tag": "Ancient ruins, museum, sweeping valley views, historical architecture", "season": "Mar–Jun, Sep–Nov"}, {"id": "kareri-lake", "name": "Kareri Lake", "lat": 32.2858, "lng": 76.305, "district": "Kangra", "region": "Kangra Valley", "category": "lake", "segment": "trek", "tag": "Glacial lake, scenic trekking, Dhauladhar views.", "season": "Mar–Jun, Sep–Nov"}, {"id": "kareri-village", "name": "Kareri Village", "lat": 32.2855, "lng": 76.3055, "district": "Kangra", "region": "Kangra Valley", "category": "village", "segment": "culture", "tag": "Village lifestyle, trekking base, scenic landscapes.", "season": "Mar–Jun, Sep–Nov"}, {"id": "karol-tibba", "name": "Karol Tibba", "lat": 30.9333, "lng": 77.1167, "district": "Solan", "region": "Solan", "category": "trek", "segment": "adventure", "tag": "Trekking, cave legends, summit views.", "season": "Oct–Mar"}, {"id": "karsog-valley", "name": "Karsog Valley", "lat": 31.3333, "lng": 77.2167, "district": "Mandi", "region": "Mandi", "category": "heritage", "segment": "culture", "tag": "Ancient wooden temples, apple orchards, tranquil valley views, traditional architecture", "season": "Mar–Jun, Sep–Nov"}, {"id": "kasauli", "name": "Kasauli", "lat": 30.9013, "lng": 76.9649, "district": "Solan", "region": "Solan", "category": "core", "segment": "heritage", "tag": "Christ Church, Monkey Point, Sunset Point, pine forests", "season": "Oct–Mar"}, {"id": "kasol", "name": "Kasol", "lat": 32.01, "lng": 77.316, "district": "Kullu", "region": "Parvati Valley", "category": "adventure", "segment": "village", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov"}, {"id": "kaza", "name": "Kaza", "lat": 32.227, "lng": 78.067, "district": "Lahaul & Spiti", "region": "Spiti Valley", "category": "core", "segment": "town", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Jun–Sep"}, {"id": "key-monastery", "name": "Key Monastery", "lat": 32.299, "lng": 78.012, "district": "Lahaul & Spiti", "region": "Spiti Valley", "category": "spiritual", "segment": "monastery", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Jun–Sep"}, {"id": "khajjiar", "name": "Khajjiar", "lat": 32.549, "lng": 76.059, "district": "Chamba", "region": "Chamba Valley", "category": "scenic", "segment": "meadow", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Apr–Jun, Sep–Nov"}, {"id": "kheerganga-trek", "name": "Kheerganga Trek", "lat": 32.033, "lng": 77.451, "district": "Kullu", "region": "Parvati Valley", "category": "adventure", "segment": "trek", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov"}, {"id": "kibber-village", "name": "Kibber Village", "lat": 32.3333, "lng": 78.0167, "district": "Lahaul & Spiti", "region": "Spiti Valley", "category": "village", "segment": "culture", "tag": "Grey-stone architecture, high-altitude desert, mountain views.", "season": "Jun–Sep"}, {"id": "kinnaur-kailash-view-point", "name": "Kinnaur Kailash View Point", "lat": 31.5583, "lng": 78.2833, "district": "Kinnaur", "region": "Kinnaur Valley", "category": "viewpoint", "segment": "nature", "tag": "Mountain panorama, sacred peaks, scenic photography.", "season": "May–Jun, Sep–Oct"}, {"id": "komic", "name": "Komic", "lat": 32.3083, "lng": 78.0167, "district": "Lahaul & Spiti", "region": "Spiti Valley", "category": "village", "segment": "culture", "tag": "High-altitude monastery, village scenery, desert landscapes.", "season": "Jun–Sep"}, {"id": "kotgarh", "name": "Kotgarh", "lat": 31.2581, "lng": 77.4475, "district": "Shimla", "region": "Upper Shimla", "category": "orchard", "segment": "nature", "tag": "Apple orchards, panoramic views of the Sutlej, colonial heritage.", "season": "Mar–Jun, Sep–Nov, Dec–Feb (snow)"}, {"id": "kufri", "name": "Kufri", "lat": 31.0978, "lng": 77.267, "district": "Shimla", "region": "Shimla Hills", "category": "scenic", "segment": "hillstation", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov, Dec–Feb (snow)"}, {"id": "kullu", "name": "Kullu", "lat": 31.958, "lng": 77.109, "district": "Kullu", "region": "Kullu Valley", "category": "core", "segment": "town", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov"}, {"id": "kunzum-pass", "name": "Kunzum Pass", "lat": 32.3667, "lng": 77.6333, "district": "Lahaul & Spiti", "region": "Spiti Valley", "category": "pass", "segment": "adventure", "tag": "High-altitude pass, mountain views, temple.", "season": "Jun–Sep"}, {"id": "langza", "name": "Langza Village", "lat": 32.27, "lng": 78.07, "district": "Lahaul & Spiti", "region": "Spiti Valley", "category": "heritage", "segment": "culture", "tag": "Marine fossils, giant Buddha statue, homestays, stark landscapes", "season": "Jun–Sep"}, {"id": "malana", "name": "Malana Village", "lat": 32.062, "lng": 77.265, "district": "Kullu", "region": "Parvati Valley", "category": "heritage", "segment": "culture", "tag": "Distinct local culture, traditional wooden architecture, scenic trekking trails", "season": "Mar–Jun, Sep–Nov"}, {"id": "mall-road", "name": "Mall Road", "lat": 31.1045, "lng": 77.173, "district": "Shimla", "region": "Shimla Hills", "category": "core", "segment": "heritage", "tag": "Shopping street, cafes, colonial architecture, local markets", "season": "Mar–Jun, Sep–Nov, Dec–Feb (snow)"}, {"id": "manali", "name": "Manali", "lat": 32.2432, "lng": 77.1892, "district": "Kullu", "region": "Kullu Valley", "category": "core", "segment": "town", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov"}, {"id": "manikaran-sahib", "name": "Manikaran Sahib", "lat": 32.026, "lng": 77.35, "district": "Kullu", "region": "Parvati Valley", "category": "spiritual", "segment": "gurudwara", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov"}, {"id": "manimahesh-lake", "name": "Manimahesh Lake", "lat": 32.3956, "lng": 76.6433, "district": "Chamba", "region": "Chamba Valley", "category": "lake", "segment": "spiritual", "tag": "Sacred lake, spiritual pilgrimage, mountain peak views.", "season": "Apr–Jun, Sep–Nov"}, {"id": "mashobra", "name": "Mashobra", "lat": 31.1345, "lng": 77.2198, "district": "Shimla", "region": "Shimla Hills", "category": "scenic", "segment": "nature", "tag": "Scenic views, historical sites, and local cultural experiences.", "season": "Mar–Jun, Sep–Nov, Dec–Feb (snow)"}, {"id": "masroor-rock-cut-temples", "name": "Masroor Rock Cut Temples", "lat": 32.0913, "lng": 76.2573, "district": "Kangra", "region": "Kangra Valley", "category": "temple", "segment": "heritage", "tag": "Ancient monolithic architecture, historical carvings, scenic ridge views.", "season": "Mar–Jun, Sep–Nov"}, {"id": "mcleod-ganj", "name": "McLeod Ganj", "lat": 32.2426, "lng": 76.3213, "district": "Kangra", "region": "Kangra Valley", "category": "core", "segment": "culture", "tag": "Tibetan monasteries, cafes, hiking trails, waterfalls", "season": "Mar–Jun, Sep–Nov"}, {"id": "mohan-shakti-heritage-park", "name": "Mohan Shakti Heritage Park", "lat": 30.9, "lng": 77.1, "district": "Solan", "region": "Solan", "category": "park", "segment": "heritage", "tag": "Vedic architecture, heritage park, cultural statues.", "season": "Oct–Mar"}, {"id": "naggar-castle", "name": "Naggar Castle", "lat": 32.112, "lng": 77.164, "district": "Kullu", "region": "Kullu Valley", "category": "fort", "segment": "heritage", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov"}, {"id": "nahan", "name": "Nahan", "lat": 30.55, "lng": 77.3, "district": "Sirmaur", "region": "Sirmaur", "category": "town", "segment": "culture", "tag": "Princely town, historical architecture, cultural landmarks.", "season": "Oct–Mar (lower), May–Jun (peaks)"}, {"id": "nako-village", "name": "Nako Village", "lat": 31.8814, "lng": 78.6276, "district": "Kinnaur", "region": "Kinnaur", "category": "scenic", "segment": "nature", "tag": "High-altitude lake, ancient monastery, traditional stone houses", "season": "May–Jun, Sep–Oct"}, {"id": "naldehra", "name": "Naldehra", "lat": 31.1664, "lng": 77.2343, "district": "Shimla", "region": "Shimla Hills", "category": "scenic", "segment": "nature", "tag": "Golf course, scenic pine forests, panoramic valley views.", "season": "Mar–Jun, Sep–Nov, Dec–Feb (snow)"}, {"id": "narkanda", "name": "Narkanda", "lat": 31.269, "lng": 77.46, "district": "Shimla", "region": "Upper Shimla", "category": "scenic", "segment": "hillstation", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov, Dec–Feb (snow)"}, {"id": "narvadeshwar-temple", "name": "Narvadeshwar Temple", "lat": 31.6833, "lng": 76.5167, "district": "Hamirpur", "region": "Hamirpur", "category": "temple", "segment": "spiritual", "tag": "Historical frescoes, artistic temple, heritage site.", "season": "Oct–Mar"}, {"id": "norbulingka-institute", "name": "Norbulingka Institute", "lat": 32.2198, "lng": 76.315, "district": "Kangra", "region": "Kangra Valley", "category": "heritage", "segment": "culture", "tag": "Tibetan arts, traditional crafts, tranquil gardens.", "season": "Mar–Jun, Sep–Nov"}, {"id": "old-manali", "name": "Old Manali", "lat": 32.251, "lng": 77.188, "district": "Kullu", "region": "Kullu Valley", "category": "culture", "segment": "village", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov"}, {"id": "palampur-tea-gardens", "name": "Palampur Tea Gardens", "lat": 32.1158, "lng": 76.54, "district": "Kangra", "region": "Kangra Valley", "category": "garden", "segment": "nature", "tag": "Tea production, lush greenery, mountain views.", "season": "Mar–Jun, Sep–Nov"}, {"id": "pandoh-dam", "name": "Pandoh Dam", "lat": 31.65, "lng": 77.1, "district": "Mandi", "region": "Mandi", "category": "dam", "segment": "nature", "tag": "Dam reservoir, scenic turquoise water, mountain views.", "season": "Mar–Jun, Sep–Nov"}, {"id": "pangi-valley", "name": "Pangi Valley", "lat": 33.05, "lng": 76.5, "district": "Chamba", "region": "Pangi Valley", "category": "valley", "segment": "nature", "tag": "Rugged landscapes, extreme nature, remote village culture.", "season": "Apr–Jun, Sep–Nov"}, {"id": "pin-valley", "name": "Pin Valley National Park", "lat": 31.9, "lng": 78.2, "district": "Lahaul & Spiti", "region": "Spiti Valley", "category": "nature", "segment": "national-park", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Jun–Sep"}, {"id": "pong-dam-lake", "name": "Pong Dam Lake", "lat": 32, "lng": 76.0833, "district": "Kangra", "region": "Kangra Valley", "category": "lake", "segment": "nature", "tag": "Migratory bird sanctuary, boating, lake landscapes.", "season": "Mar–Jun, Sep–Nov"}, {"id": "pooh", "name": "Pooh", "lat": 31.7583, "lng": 78.3833, "district": "Kinnaur", "region": "Kinnaur Valley", "category": "village", "segment": "culture", "tag": "River confluence, local village life, transition zone scenery.", "season": "May–Jun, Sep–Oct"}, {"id": "prashar-lake", "name": "Prashar Lake", "lat": 31.754, "lng": 77.1009, "district": "Mandi", "region": "Mandi", "category": "spiritual", "segment": "nature", "tag": "Floating island lake, ancient pagoda temple, 360-degree mountain views", "season": "Mar–Jun, Sep–Nov"}, {"id": "pulga", "name": "Pulga", "lat": 32.0089, "lng": 77.4739, "district": "Kullu", "region": "Parvati Valley", "category": "village", "segment": "culture", "tag": "Fairy forest, quiet trekking trails, rustic architecture.", "season": "Mar–Jun, Sep–Nov"}, {"id": "raison", "name": "Raison", "lat": 31.9567, "lng": 77.1667, "district": "Kullu", "region": "Kullu Valley", "category": "river-side", "segment": "nature", "tag": "Riverside camping, Beas river, peaceful picnic spots.", "season": "Mar–Jun, Sep–Nov"}, {"id": "rakcham", "name": "Rakcham", "lat": 31.3967, "lng": 78.33, "district": "Kinnaur", "region": "Baspa Valley", "category": "village", "segment": "culture", "tag": "Traditional wooden homes, Baspa river views, remote valley vibe.", "season": "May–Jun, Sep–Oct"}, {"id": "reckong-peo", "name": "Reckong Peo", "lat": 31.53, "lng": 78.27, "district": "Kinnaur", "region": "Kinnaur Valley", "category": "core", "segment": "town", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "May–Jun, Sep–Oct"}, {"id": "renuka-lake", "name": "Renuka Lake", "lat": 30.605, "lng": 77.458, "district": "Sirmaur", "region": "Sirmaur", "category": "nature", "segment": "lake", "tag": "Boating, wildlife sanctuary, temples, lush green surroundings", "season": "Oct–Mar (lower), May–Jun (peaks)"}, {"id": "rewalsar-lake", "name": "Rewalsar Lake", "lat": 31.6317, "lng": 76.8167, "district": "Mandi", "region": "Mandi", "category": "lake", "segment": "spiritual", "tag": "Floating islands, spiritual site, peaceful lake.", "season": "Mar–Jun, Sep–Nov"}, {"id": "roghi-village", "name": "Roghi Village", "lat": 31.55, "lng": 78.2667, "district": "Kinnaur", "region": "Kinnaur Valley", "category": "village", "segment": "culture", "tag": "Traditional architecture, cliff views, mountain vistas.", "season": "May–Jun, Sep–Oct"}, {"id": "rohtang-pass", "name": "Rohtang Pass", "lat": 32.3716, "lng": 77.2466, "district": "Kullu", "region": "Kullu Valley", "category": "scenic", "segment": "nature", "tag": "Snow activities, panoramic mountain views, glaciers", "season": "Mar–Jun, Sep–Nov"}, {"id": "sach-pass", "name": "Sach Pass", "lat": 33.0294, "lng": 76.3267, "district": "Chamba", "region": "Pangi Valley", "category": "pass", "segment": "adventure", "tag": "Dramatic mountain views, challenging trekking/driving, adventure.", "season": "Apr–Jun, Sep–Nov"}, {"id": "sainj-valley", "name": "Sainj Valley", "lat": 31.65, "lng": 77.3833, "district": "Kullu", "region": "Seraj Region", "category": "valley", "segment": "nature", "tag": "Terraced fields, river trekking, remote village life.", "season": "Mar–Jun, Sep–Nov"}, {"id": "sangla", "name": "Sangla", "lat": 31.429, "lng": 78.262, "district": "Kinnaur", "region": "Baspa Valley", "category": "scenic", "segment": "valley", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "May–Jun, Sep–Oct"}, {"id": "saurabh-van-vihar", "name": "Saurabh Van Vihar", "lat": 32.12, "lng": 76.55, "district": "Kangra", "region": "Kangra Valley", "category": "park", "segment": "nature", "tag": "Botanical gardens, memorial park, walking trails.", "season": "Mar–Jun, Sep–Nov"}, {"id": "serolsar-lake", "name": "Serolsar Lake", "lat": 31.54, "lng": 77.42, "district": "Kullu", "region": "Seraj Region", "category": "trek", "segment": "lake", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov"}, {"id": "shimla-state-museum", "name": "Shimla State Museum", "lat": 31.1035, "lng": 77.182, "district": "Shimla", "region": "Shimla Hills", "category": "heritage", "segment": "museum", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov, Dec–Feb (snow)"}, {"id": "shoja", "name": "Shoja", "lat": 31.554, "lng": 77.382, "district": "Kullu", "region": "Seraj Region", "category": "scenic", "segment": "nature", "tag": "Wooden houses, nature walks, waterfall trails, quiet retreats", "season": "Mar–Jun, Sep–Nov"}, {"id": "sissu", "name": "Sissu", "lat": 32.474, "lng": 77.124, "district": "Lahaul & Spiti", "region": "Lahaul Valley", "category": "scenic", "segment": "village", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Jun–Sep"}, {"id": "solang-valley", "name": "Solang Valley", "lat": 32.316, "lng": 77.157, "district": "Kullu", "region": "Kullu Valley", "category": "adventure", "segment": "valley", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov"}, {"id": "sujanpur-tira-fort", "name": "Sujanpur Tira Fort", "lat": 31.8333, "lng": 76.5, "district": "Hamirpur", "region": "Hamirpur", "category": "fort", "segment": "heritage", "tag": "Fortress history, wall paintings, historical site.", "season": "Oct–Mar"}, {"id": "sundernagar-lake", "name": "Sundernagar Lake", "lat": 31.5333, "lng": 76.8833, "district": "Mandi", "region": "Mandi", "category": "lake", "segment": "nature", "tag": "Lake, garden, peaceful scenery.", "season": "Mar–Jun, Sep–Nov"}, {"id": "tabo-monastery", "name": "Tabo Monastery", "lat": 32.093, "lng": 78.383, "district": "Lahaul & Spiti", "region": "Spiti Valley", "category": "heritage", "segment": "monastery", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Jun–Sep"}, {"id": "tani-jubbar", "name": "Tani Jubbar Lake", "lat": 31.28, "lng": 77.42, "district": "Shimla", "region": "Upper Shimla", "category": "lake", "segment": "nature", "tag": "Oval lake, dense deodar forest, peaceful picnics, birdwatching", "season": "Mar–Jun, Sep–Nov, Dec–Feb (snow)"}, {"id": "tattapani", "name": "Tattapani", "lat": 31.2333, "lng": 77.2667, "district": "Mandi", "region": "Sutlej Valley", "category": "hot-spring", "segment": "nature", "tag": "Hot sulfur springs, river rafting, bridge views, riverside camping", "season": "Mar–Jun, Sep–Nov"}, {"id": "the-ridge", "name": "The Ridge", "lat": 31.1048, "lng": 77.1734, "district": "Shimla", "region": "Shimla Hills", "category": "core", "segment": "heritage", "tag": "Open plaza, Christ Church, cultural festivals, panoramic mountain views", "season": "Mar–Jun, Sep–Nov, Dec–Feb (snow)"}, {"id": "tirthan-valley", "name": "Tirthan Valley", "lat": 31.612, "lng": 77.355, "district": "Kullu", "region": "Seraj Region", "category": "scenic", "segment": "nature", "tag": "Trout fishing, Great Himalayan National Park access, riverside stays, waterfalls", "season": "Mar–Jun, Sep–Nov"}, {"id": "tosh", "name": "Tosh", "lat": 32.025, "lng": 77.45, "district": "Kullu", "region": "Parvati Valley", "category": "adventure", "segment": "village", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov"}, {"id": "triund", "name": "Triund", "lat": 32.2618, "lng": 76.3503, "district": "Kangra", "region": "Kangra Valley", "category": "trek", "segment": "adventure", "tag": "Trekking trails, camping, stargazing, mountain panoramas", "season": "Mar–Jun, Sep–Nov"}, {"id": "vashisht-hot-springs", "name": "Vashisht Hot Springs", "lat": 32.256, "lng": 77.195, "district": "Kullu", "region": "Kullu Valley", "category": "nature", "segment": "hot-spring", "tag": "Major tourist attraction, scenic landscapes, cultural significance", "season": "Mar–Jun, Sep–Nov"}], "vehicles": {"sedan": {"driver_night_halt": 500, "examples": "Swift Dzire, Toyota Etios, Honda Amaze", "gst_pct": 5, "gst_percent": 5, "hill_permit_per_trip": 550, "label": "Sedan (Dzire / Etios)", "max_pax": 4, "min_pax": 1, "parking_per_day": 100, "parking_per_day_est": 100, "rate_per_day_local": 2200, "rate_per_day_outstation": 3000, "rate_per_km": 14, "rate_per_km_outstation": 14, "recommended_for": "couples, city routes, up to 4 pax", "spiti_kinnaur_ok": false, "tempo_ok": false, "toll_per_day": 150, "toll_per_day_est": 150}, "suv_bolero": {"driver_night_halt": 500, "examples": "Mahindra Bolero, Mahindra Scorpio, Xylo", "gst_pct": 5, "gst_percent": 5, "hill_permit_per_trip": 550, "label": "SUV Tough (Bolero / Scorpio)", "max_pax": 7, "min_pax": 2, "parking_per_day": 100, "parking_per_day_est": 100, "rate_per_day_local": 3500, "rate_per_day_outstation": 5000, "rate_per_km": 20, "rate_per_km_outstation": 20, "recommended_for": "Spiti, Kinnaur, very high altitude, rough terrain", "spiti_kinnaur_ok": true, "tempo_ok": false, "toll_per_day": 200, "toll_per_day_est": 200}, "suv_ertiga": {"driver_night_halt": 500, "examples": "Maruti Ertiga, Toyota Rumion", "gst_pct": 5, "gst_percent": 5, "hill_permit_per_trip": 550, "label": "SUV Standard (Ertiga / Rumion)", "max_pax": 6, "min_pax": 2, "parking_per_day": 100, "parking_per_day_est": 100, "rate_per_day_local": 3500, "rate_per_day_outstation": 4200, "rate_per_km": 18, "rate_per_km_outstation": 18, "recommended_for": "families 4-6 pax, standard hill routes", "spiti_kinnaur_ok": false, "tempo_ok": false, "toll_per_day": 200, "toll_per_day_est": 200}, "suv_innova": {"driver_night_halt": 600, "examples": "Toyota Innova Crysta", "gst_pct": 5, "gst_percent": 5, "hill_permit_per_trip": 550, "label": "SUV Premium (Innova Crysta)", "max_pax": 6, "min_pax": 2, "parking_per_day": 150, "parking_per_day_est": 150, "rate_per_day_local": 5000, "rate_per_day_outstation": 6000, "rate_per_km": 22, "rate_per_km_outstation": 22, "recommended_for": "premium comfort, high altitude routes, 4-6 pax", "spiti_kinnaur_ok": true, "tempo_ok": false, "toll_per_day": 200, "toll_per_day_est": 200}, "tempo_12": {"driver_night_halt": 700, "examples": "Force Tempo Traveller 12 seater", "gst_pct": 5, "gst_percent": 5, "hill_permit_per_trip": 550, "label": "Tempo Traveller 12 Seater", "max_pax": 12, "min_pax": 7, "parking_per_day": 200, "parking_per_day_est": 200, "rate_per_day_local": 8500, "rate_per_day_outstation": 10000, "rate_per_km": 28, "rate_per_km_outstation": 28, "recommended_for": "large groups 7-12 pax, local & hill routes", "spiti_kinnaur_ok": false, "state_tax_per_day": 500, "tempo_ok": true, "toll_per_day": 350, "toll_per_day_est": 350}}, "config": {"_note": "Config for the general-purpose Route Builder (yui.html-style) that lets users build a route from ANY combination of places, not just fixed packages. Hotel figures are flat generic per-night estimates since a user-built route has no fixed hotel tie-up like package_content does.", "image_base_url": "https://luxoticindia.com/images/places/", "default_vehicle": "suv_ertiga", "auto_days_per_stop_group": 3, "hotel_per_night_pp": {"budget": 900, "premium": 1600, "luxury": 2800}, "avg_pax_per_room": 2, "default_best_time": "Mar-Jun, Sep-Nov"}};
+// ---------- category styling ----------
+const CAT_ICON = {
+  'lake':'🏞️','peak':'⛰️','pass':'⛰️','valley':'🌄','waterfall':'💧','temple':'🛕',
+  'monastery':'🛕','museum':'🏛️','fort':'🏰','trek':'🥾','village':'🏘️','hot-spring':'♨️',
+  'wildlife':'🦌','park':'🌲','heritage':'🏛️','hill-station':'🏔️','lookout':'🔭','art-village':'🎨',
+  'default':'📍'
+};
+const CAT_COLOR = {
+  'lake':'#1f7ac9','peak':'#6b4fa0','pass':'#6b4fa0','valley':'#b07d3a','waterfall':'#1f9dc9',
+  'temple':'#c8952f','monastery':'#c8952f','museum':'#a05a2c','fort':'#a05a2c','trek':'#c9622f',
+  'village':'#5b6b62','hot-spring':'#c94b3c','wildlife':'#3d7a3d','park':'#3d7a3d',
+  'heritage':'#a05a2c','hill-station':'#b07d3a','lookout':'#1f7ac9','art-village':'#c9622f'
+};
+function catIcon(seg){ return CAT_ICON[seg] || CAT_ICON.default; }
+function catColor(seg){ return CAT_COLOR[seg] || '#b07d3a'; }
+
+// Best-effort image URL for a place. Prefers an explicit `image` field on the
+// place record (same convention package_content already uses); falls back to
+// guessing `<image_base_url><id>.jpg`. Neither is guaranteed to resolve — every
+// caller must pair this with onerror handling that falls back to the colored
+// icon tile, since actual filenames on the live site aren't id-matched yet
+// (see /images/places/<id>.jpg vs the real /assets/images/<slug>_<n>.jpg mix).
+function placeImgUrl(p){
+  if(!p) return '';
+  if(p.image) return p.image;
+  const base = DB && DB.config && DB.config.image_base_url;
+  return base ? base + p.id + '.jpg' : '';
+}
+
+// ---------- state ----------
+let stops = []; // {id,name,lat,lng,district,region,segment,tag}
+let routeLegs = []; // OSRM legs aligned to stops[1..n]
+let lastTotalKm = 0, lastTotalMin = 0;
+let pax = 2;
+// Live price for a route-builder package — same formula/source as
+// group-pricing.html, packages.html, package-detail.html and the admin
+// calculator (assets/js/pricing-engine.js). Route builder has no tier or
+// travel-month picker, so this uses budget tier + the current month, same
+// as the old budget_price_pp field it replaces.
+function pkgPricePP(template){
+  if(!template || !template.days) return 0;
+  return PricingEngine.computePrice({ days: template.days, pax, tier: 'budget' }).totalPP;
+}
+let map, tileLayer, routeLine, markersLayer;
+let currentTiles = 'map';
+
+let DB = null;
+let placeById = {};
+
+// ---------- payment config ----------
+const RAZORPAY_KEY = 'OHPWkChulBwl3GwV9szQZh97'; // ← same key as booking.html
+const PAY_MODE_PCT = { adv40: 0.40, adv60: 0.60 };
+const PAY_MODE_LABEL = { adv40: '40% advance', adv60: '60% advance' };
+let payMode = 'adv40'; // which advance % is selected in the package detail panel
+
+// ---------- live Firebase data (falls back to embedded snapshot above) ----------
+const FB_BASE = "https://garg-enterprise-default-rtdb.asia-southeast1.firebasedatabase.app";
+function fetchJSON(path){
+  return fetch(FB_BASE + path + ".json").then(r => r.ok ? r.json() : null).catch(() => null);
+}
+async function loadDB(){
+  const [placesIdx, vehicles, config, gst, templates, packageContent] = await Promise.all([
+    fetchJSON('/places_index'),
+    fetchJSON('/vehicle_rate_card'),
+    fetchJSON('/route_builder_config'),
+    fetchJSON('/gst_config'),
+    fetchJSON('/templates_index'),
+    fetchJSON('/package_content')
+  ]);
+  if(!placesIdx || !vehicles || !config){
+    console.warn('[Firebase] Live fetch incomplete — using embedded fallback data');
+    const fb = DB_FALLBACK;
+    fb.templates = templates || {};
+    fb.packageContent = packageContent || {};
+    fb.gst = fb.gst || gst || { hotel_gst_pct_budget: 12, hotel_gst_pct_premium: 18, hotel_gst_pct_luxury: 18, transport_gst_pct: 5 };
+    return fb;
+  }
+  const places = Object.keys(placesIdx).map(id => {
+    const p = placesIdx[id] || {};
+    return {
+      id, name: p.name, lat: p.lat, lng: p.lng, district: p.district,
+      region: p.region, category: p.category, segment: p.segment,
+      tag: p.tagline || '', season: p.season || ''
+    };
+  });
+  return {
+    places,
+    vehicles,
+    config,
+    gst: gst || { hotel_gst_pct_budget: 12, hotel_gst_pct_premium: 18, hotel_gst_pct_luxury: 18, transport_gst_pct: 5 },
+    templates: templates || {},
+    packageContent: packageContent || {}
+  };
+}
+
+// ---------- theme ----------
+function setTheme(t){
+  document.body.setAttribute('data-theme', t);
+  document.getElementById('themeLight').classList.toggle('active', t==='light');
+  document.getElementById('themeDark').classList.toggle('active', t==='dark');
+}
+
+// ---------- planning mode (build-it-yourself vs choose-a-package) ----------
+const MAP_HINTS = {
+  custom: { title:'Add at least 2 stops, then hit Generate Route', sub:'Your road-following route, distances and day-wise itinerary will appear here.' },
+  packages: { title:'Pick a gateway, then a destination', sub:'Open any suggested package on the left to preview its route here.' }
+};
+function updateMapHint(mode){
+  const hint = document.getElementById('mapHint');
+  if(!hint || hint.style.display === 'none') return;
+  const copy = MAP_HINTS[mode] || MAP_HINTS.custom;
+  hint.innerHTML = `<b>${copy.title}</b><span>${copy.sub}</span>`;
+}
+function chooseMode(mode){
+  document.getElementById('modeSelect').style.display = 'none';
+  document.body.classList.remove('mode-custom','mode-packages');
+  document.body.classList.add(mode==='packages' ? 'mode-packages' : 'mode-custom');
+  document.getElementById('modeBtnCustom')?.classList.toggle('active', mode!=='packages');
+  document.getElementById('modeBtnPackages')?.classList.toggle('active', mode==='packages');
+  updateMapHint(mode);
+
+  if(!selectedGateway){
+    // First run: the gateway hasn't been picked yet — that's its own full-screen step.
+    openGatewaySelect();
+  } else {
+    document.getElementById('gatewaySelect').style.display = 'none';
+    document.getElementById('appShell').style.display = 'flex';
+    setTimeout(()=>{ if(map) map.invalidateSize(); }, 60);
+  }
+}
+function isCustomMode(){ return !document.body.classList.contains('mode-packages'); }
+
+// ---------- full-screen gateway step ----------
+function renderGatewayCards(){
+  const box = document.getElementById('gwcCards');
+  box.innerHTML = '';
+  GATEWAYS.forEach(g=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'gwc-card';
+    b.id = `gwcCard-${g.name}`;
+    if(g.name === selectedGateway) b.classList.add('active');
+    b.innerHTML = `<span class="gwc-icon">${g.icon}</span><strong>${g.name}</strong><span class="gwc-sub">${g.blurb || 'Popular starting point'}</span>`;
+    b.onclick = () => confirmGatewayChoice(g.name);
+    box.appendChild(b);
+  });
+}
+function openGatewaySelect(){
+  renderGatewayCards();
+  document.getElementById('modeSelect').style.display = 'none';
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('gatewaySelect').style.display = 'flex';
+}
+function backToModeSelect(){
+  document.getElementById('gatewaySelect').style.display = 'none';
+  document.getElementById('modeSelect').style.display = 'flex';
+}
+function confirmGatewayChoice(name){
+  selectGateway(name);
+  document.getElementById('gatewaySelect').style.display = 'none';
+  document.getElementById('appShell').style.display = 'flex';
+  setTimeout(()=>{ if(map) map.invalidateSize(); }, 60);
+}
+
+// ---------- travelers ----------
+function changePax(d){
+  pax = Math.max(1, Math.min(12, pax + d));
+  document.getElementById('paxLabel').textContent = pax + (pax===1?' Adult':' Adults');
+  if(currentPkg) refreshPkgPayUI();
+}
+
+// ---------- search & add ----------
+function renderSearch(){
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const box = document.getElementById('searchResults');
+  const addedIds = new Set(stops.map(s=>s.id));
+  let list = DB.places.filter(p => !addedIds.has(p.id));
+  if(q) list = list.filter(p => p.name.toLowerCase().includes(q) || (p.district||'').toLowerCase().includes(q) || (p.region||'').toLowerCase().includes(q));
+  list = list.slice(0, 30);
+  box.innerHTML = '';
+  if(list.length===0){
+    box.innerHTML = '<div class="sr-empty">No matching places left to add</div>';
+  } else {
+    list.forEach(p=>{
+      const el = document.createElement('div');
+      el.className='sr-item';
+      const imgUrl = placeImgUrl(p);
+      el.innerHTML = `<span class="sr-left"><span class="sr-thumb" style="background:${catColor(p.segment)}"><span class="stop-thumb-icon">${catIcon(p.segment)}</span>${imgUrl?`<img src="${imgUrl}" alt="" loading="lazy" onerror="this.remove()">`:''}</span><span class="sr-name">${p.name}</span></span><small>${p.district||''}</small>`;
+      el.onclick = ()=>{ addStop(p.id); document.getElementById('searchInput').value=''; box.classList.remove('show'); };
+      box.appendChild(el);
+    });
+  }
+  box.classList.add('show');
+}
+document.addEventListener('click', (e)=>{
+  if(!e.target.closest('.search-box')) document.getElementById('searchResults').classList.remove('show');
+});
+
+// ---------- gateway (fixed start cities) ----------
+const GATEWAYS = [
+  {name:'DELHI',       icon:'✈️', lat:28.6139, lng:77.2090, blurb:'Fly or drive in — the classic start for most Himachal trips'},
+  {name:'CHANDIGARH',  icon:'🚌', lat:30.7333, lng:76.7794, blurb:'Closest airport to the hills — quickest way into Shimla & beyond'},
+  {name:'SHIMLA',      icon:'🏔️', lat:31.1048, lng:77.1734, blurb:'Already in the hills — perfect base for a Shimla-first itinerary'},
+  {name:'MANALI',      icon:'❄️', lat:32.2396, lng:77.1887, blurb:'Gateway to Kullu Valley, Spiti and the high mountain passes'},
+  {name:'DHARAMSHALA', icon:'☸️', lat:32.2190, lng:76.3234, blurb:'Kangra Valley base — McLeod Ganj, Bir Billing and Dalhousie nearby'}
+];
+let startPlace = null;
+let selectedGateway = null;
+
+function selectGateway(name){
+  selectedGateway = name;
+  const mini = document.getElementById('gatewayMiniName');
+  if(mini) mini.textContent = name;
+
+  const g = GATEWAYS.find(x=>x.name===name);
+  startPlace = { id:name.toLowerCase(), name:name, lat:g.lat, lng:g.lng, isGateway:true };
+
+  renderPopularDestinations(name);
+  document.getElementById('destPanelGw').textContent = name.charAt(0)+name.slice(1).toLowerCase();
+  document.getElementById('destPanel').style.display = 'block';
+  document.getElementById('suggestedPkgsPanel').style.display = 'none';
+  const leftHint = document.getElementById('pkgLeftEmptyHint');
+  if(leftHint) leftHint.style.display = 'none';
+  closePkgDetail();
+
+  if(isCustomMode()) openDestModal(name);
+}
+
+// ---------- popular destinations (live "core"-category places from Firebase) ----------
+function renderPopularDestinations(gatewayName){
+  const sel = document.getElementById('destSelect');
+  sel.innerHTML = '<option value="">Choose a destination…</option>';
+  const popular = DB.places
+    .filter(p => p.category === 'core' && p.name.toUpperCase() !== gatewayName)
+    .sort((a,b)=>a.name.localeCompare(b.name));
+  popular.forEach(p=>{
+    const o = document.createElement('option');
+    o.value = p.id; o.textContent = `${p.name} (${p.district||''})`;
+    sel.appendChild(o);
+  });
+}
+
+// ---------- destination picker popup (Build It Yourself mode) ----------
+// Hand-picked, in order of real-world popularity for travellers starting from
+// each gateway — these are the routes we actually sell most from each city.
+// Anything not on this list still gets ranked by the fallback heuristic below,
+// so the picker never runs dry even for an unusual gateway/place combo.
+const CURATED_RECOMMENDATIONS = {
+  DELHI:       ['manali','mcleod-ganj','dharamshala','dalhousie','khajjiar','kasol','solang-valley','old-manali','kullu','the-ridge','mall-road','kasauli','chail','kufri'],
+  CHANDIGARH:  ['kasauli','chail','the-ridge','mall-road','kufri','narkanda','manali','dalhousie','khajjiar','kullu','solang-valley','mcleod-ganj'],
+  SHIMLA:      ['kufri','narkanda','chail','mashobra','naldehra','fagu','the-ridge','mall-road','jakhu-temple','sangla','kalpa','manali'],
+  MANALI:      ['solang-valley','old-manali','rohtang-pass','hadimba-temple','naggar-castle','kasol','manikaran-sahib','kullu','jibhi','bir-billing','vashisht-hot-springs'],
+  DHARAMSHALA: ['mcleod-ganj','triund','bir-billing','palampur-tea-gardens','kangra-fort','dalhousie','khajjiar','norbulingka-institute','chamba','kasol','manali']
+};
+
+let destModalGatewayName = null;
+let destModalTab = 'recommended';
+let destModalSelection = new Set();
+let destModalOrder = []; // ordered ids — order drives both display and the "base point" chain
+
+function getRecommendedPlaces(limit){
+  limit = limit || 12;
+  if(!DB) return [];
+  const addedIds = new Set(stops.map(s=>s.id));
+  const eligible = id => !addedIds.has(id) && !destModalSelection.has(id) &&
+    placeById[id] && placeById[id].name.toUpperCase() !== destModalGatewayName;
+
+  // Once at least one destination is picked, that pick becomes the new
+  // "base point" — recommendations chain forward from wherever the traveller
+  // last placed themselves, instead of always pointing back at the gateway.
+  // This is pure proximity: a "must-visit" tag must never outrank actual
+  // distance, or a town 300km away can beat one that's genuinely next door.
+  if(destModalOrder.length){
+    const basePlace = placeById[destModalOrder[destModalOrder.length-1]];
+    if(!basePlace) return [];
+    const byDistance = DB.places
+      .filter(p => eligible(p.id))
+      .map(p => ({ p, km: haversine(basePlace, p) }))
+      .sort((a,b) => a.km - b.km);
+    // Widen the radius only if there genuinely aren't enough close options —
+    // never let a "famous" far-away place displace a nearby one within a tier.
+    const radiiKm = [40, 80, 150, 300, Infinity];
+    for(const r of radiiKm){
+      const within = byDistance.filter(x => x.km <= r);
+      if(within.length >= limit || r === Infinity){
+        return within.slice(0, limit).map(x => x.p);
+      }
+    }
+  }
+
+  // No picks yet — recommend off the gateway itself using the curated list.
+  const g = GATEWAYS.find(x=>x.name===destModalGatewayName);
+  if(!g) return [];
+  const curatedIds = (CURATED_RECOMMENDATIONS[destModalGatewayName] || []).filter(eligible);
+  const picked = curatedIds.slice(0, limit).map(id => placeById[id]);
+  if(picked.length >= limit) return picked;
+
+  const pickedIds = new Set(picked.map(p=>p.id));
+  const rest = DB.places
+    .filter(p => eligible(p.id) && !pickedIds.has(p.id))
+    .map(p=>{
+      const km = haversine(g, p);
+      let score = 0;
+      if(p.category === 'core') score += 100;
+      if(/major tourist attraction/i.test(p.tag||'')) score += 40;
+      score += Math.max(0, 60 - km/10);
+      return { p, score };
+    })
+    .sort((a,b)=> b.score - a.score)
+    .slice(0, limit - picked.length)
+    .map(x=>x.p);
+
+  return picked.concat(rest);
+}
+
+// Fixed statewide priority order for the "other major destinations" bar —
+// the handful of towns/hubs almost every Himachal itinerary touches,
+// independent of the current gateway or chain base point.
+const MAJOR_DESTINATIONS_ORDER = ['manali','mcleod-ganj','dharamshala','the-ridge','mall-road','kasauli','kullu','chamba','reckong-peo','kaza'];
+
+function renderDestMajorBar(){
+  const box = document.getElementById('dmbChips');
+  if(!box) return;
+  const addedIds = new Set(stops.map(s=>s.id));
+  const list = MAJOR_DESTINATIONS_ORDER
+    .map(id => placeById[id])
+    .filter(p => p && !addedIds.has(p.id) && !destModalSelection.has(p.id) && p.name.toUpperCase() !== destModalGatewayName);
+
+  if(list.length === 0){
+    box.innerHTML = '<span class="dmb-empty">You\'ve added them all!</span>';
+    return;
+  }
+  box.innerHTML = '';
+  list.forEach(p=>{
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'dmb-chip';
+    chip.innerHTML = `<span class="dmb-plus">+</span> ${p.name}`;
+    chip.onclick = () => toggleDestModalPlace(p.id);
+    box.appendChild(chip);
+  });
+}
+
+function openDestModal(gatewayName){
+  if(!gatewayName || !DB) return;
+  destModalGatewayName = gatewayName;
+  destModalTab = 'recommended';
+  destModalOrder = stops.map(s=>s.id);
+  destModalSelection = new Set(destModalOrder);
+  document.getElementById('destModalGateway').textContent = gatewayName;
+  document.getElementById('destModalSearch').value = '';
+  renderDestPicks();
+  renderDestMajorBar();
+  updateDestModalFooter();
+  setDestModalTab('recommended');
+  document.getElementById('destModalOverlay').classList.add('open');
+}
+function closeDestModal(){
+  document.getElementById('destModalOverlay').classList.remove('open');
+}
+function setDestModalTab(tab){
+  destModalTab = tab;
+  document.getElementById('destTabAll').classList.toggle('active', tab==='all');
+  renderDestModalGrid();
+}
+function updateDestModalHeading(){
+  const btn = document.getElementById('destTabRecommended');
+  if(!btn) return;
+  btn.classList.toggle('active', destModalTab==='recommended');
+  if(destModalOrder.length){
+    const last = placeById[destModalOrder[destModalOrder.length-1]];
+    btn.textContent = '✦ Near ' + (last ? last.name : 'your last pick');
+  } else {
+    btn.textContent = '✦ Recommended for you';
+  }
+}
+function updateDestModalFooter(){
+  const n = destModalOrder.length;
+  document.getElementById('destModalCount').textContent = n + (n===1 ? ' place selected' : ' places selected');
+  document.getElementById('destModalContinue').disabled = n === 0;
+}
+function renderDestPicks(){
+  const box = document.getElementById('destPicksBox');
+  if(!box) return;
+  updateDestModalHeading();
+  if(destModalOrder.length === 0){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.style.display = 'flex';
+  box.innerHTML = destModalOrder.map((id,i)=>{
+    const p = placeById[id];
+    if(!p) return '';
+    return `<span class="dest-pick-chip">
+      <span class="dpc-num">${i+1}</span>${p.name}
+      <button title="Move up" onclick="moveDestPick('${id}',-1)" ${i===0?'disabled':''}>↑</button>
+      <button title="Move down" onclick="moveDestPick('${id}',1)" ${i===destModalOrder.length-1?'disabled':''}>↓</button>
+      <button title="Remove" onclick="removeDestPick('${id}')">✕</button>
+    </span>`;
+  }).join('');
+}
+function moveDestPick(id, dir){
+  const i = destModalOrder.indexOf(id);
+  const to = i + dir;
+  if(i<0 || to<0 || to>=destModalOrder.length) return;
+  [destModalOrder[i], destModalOrder[to]] = [destModalOrder[to], destModalOrder[i]];
+  renderDestPicks();
+  renderDestModalGrid(); // last pick may have changed — recommendations re-chain from the new base point
+}
+function removeDestPick(id){
+  toggleDestModalPlace(id);
+}
+function renderDestModalGrid(){
+  const grid = document.getElementById('destModalGrid');
+  const q = document.getElementById('destModalSearch').value.trim().toLowerCase();
+  grid.innerHTML = '';
+  updateDestModalHeading();
+
+  let list;
+  if(q){
+    list = DB.places.filter(p =>
+      !destModalSelection.has(p.id) && p.name.toUpperCase() !== destModalGatewayName &&
+      (p.name.toLowerCase().includes(q) || (p.district||'').toLowerCase().includes(q) || (p.region||'').toLowerCase().includes(q))
+    ).slice(0, 40);
+  } else if(destModalTab === 'recommended'){
+    list = getRecommendedPlaces(12);
+  } else {
+    list = DB.places.filter(p => !destModalSelection.has(p.id) && p.name.toUpperCase() !== destModalGatewayName)
+      .sort((a,b)=>a.name.localeCompare(b.name));
+  }
+
+  if(list.length === 0){
+    grid.innerHTML = '<div class="dest-empty-note">No matching places found.</div>';
+    return;
+  }
+
+  list.forEach(p=>{
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'dest-card';
+    const isMajor = p.category === 'core' || /major tourist attraction/i.test(p.tag||'') ||
+      (CURATED_RECOMMENDATIONS[destModalGatewayName]||[]).includes(p.id);
+    card.innerHTML = `
+      <div class="dc-top"><b>${p.name}</b></div>
+      <div class="dc-meta">${p.district||''}${p.district?' · ':''}${p.region||''}</div>
+      <div class="dc-tag">${p.tag||''}</div>
+      ${isMajor ? '<span class="dc-badge">Must-visit</span>' : ''}`;
+    card.onclick = () => toggleDestModalPlace(p.id);
+    grid.appendChild(card);
+  });
+}
+function toggleDestModalPlace(id){
+  if(destModalSelection.has(id)){
+    destModalSelection.delete(id);
+    destModalOrder = destModalOrder.filter(x=>x!==id);
+  } else {
+    destModalSelection.add(id);
+    destModalOrder.push(id);
+  }
+  renderDestPicks();
+  renderDestModalGrid();
+  renderDestMajorBar();
+  updateDestModalFooter();
+}
+function confirmDestModal(){
+  destModalOrder.forEach(id=>{
+    if(!stops.find(s=>s.id===id)) addStop(id);
+  });
+  closeDestModal();
+  showToast('Route drafted — refine it below, then Generate Route');
+  if(stops.length >= 1) generateRoute();
+}
+
+function onDestinationChange(){
+  const id = document.getElementById('destSelect').value;
+  closePkgDetail();
+  if(!id){ document.getElementById('suggestedPkgsPanel').style.display='none'; return; }
+  const dest = placeById[id];
+  renderSuggestedPackages(selectedGateway, dest);
+  document.getElementById('suggestedPkgsPanel').style.display = 'block';
+}
+
+// ---------- suggested packages (matched from live templates_index + package_content) ----------
+function packageMatchesDestination(pkgId, destNameLower){
+  const content = DB.packageContent[pkgId];
+  const stops = content?.route_stops || [];
+  return stops.some(s => (s.name||'').toLowerCase() === destNameLower || (s.name||'').toLowerCase().includes(destNameLower));
+}
+
+function renderSuggestedPackages(gatewayName, dest){
+  const cardsBox = document.getElementById('pkgCards');
+  const noteBox = document.getElementById('noPkgNote');
+  cardsBox.innerHTML = '';
+  if(!DB.templates || Object.keys(DB.templates).length===0){
+    noteBox.style.display='block';
+    noteBox.textContent = 'Live package data is unavailable right now — WhatsApp us for a custom quote.';
+    return;
+  }
+  const destNameLower = dest.name.toLowerCase();
+  const matches = Object.values(DB.templates).filter(t =>
+    t.status === 'active' &&
+    (t.start_point||'').toUpperCase().includes(gatewayName) &&
+    packageMatchesDestination(t.package_id, destNameLower)
+  );
+  if(matches.length===0){
+    noteBox.style.display='block';
+    const msg = `No existing package covers a ${gatewayName.charAt(0)+gatewayName.slice(1).toLowerCase()} → ${dest.name} route yet — we'll plan a custom itinerary for you.`;
+    noteBox.textContent = msg;
+    const waBtn = document.createElement('button');
+    waBtn.className = 'save-btn'; waBtn.style.background='#25D366'; waBtn.style.marginTop='8px';
+    waBtn.textContent = 'Request Custom Plan on WhatsApp';
+    waBtn.onclick = () => {
+      const message = `Hi Luxotic India! I'd like a custom plan from ${gatewayName} to ${dest.name} for ${pax} traveller${pax===1?'':'s'}. Please send a detailed itinerary and quote.`;
+      window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
+    };
+    noteBox.appendChild(document.createElement('br'));
+    noteBox.appendChild(waBtn);
+    return;
+  }
+  noteBox.style.display='none';
+  matches.forEach(t=>{
+    const content = DB.packageContent[t.package_id] || {};
+    const card = document.createElement('div');
+    card.className = 'pkg-card';
+    card.innerHTML = `
+      <img src="${content.image||''}" alt="${t.package_name}" onerror="this.style.display='none'">
+      <div class="pkg-card-body">
+        <b>${t.package_name}</b>
+        <div class="pkg-card-meta"><span>${t.days} Days</span><span class="price">${t.days?fmtINR(pkgPricePP(t))+'/pax':''}</span></div>
+      </div>`;
+    card.onclick = () => openPkgDetail(t.package_id);
+    cardsBox.appendChild(card);
+  });
+}
+
+// ---------- package detail + map ----------
+let currentPkg = null;
+function openPkgDetail(pkgId){
+  const t = DB.templates[pkgId];
+  const content = DB.packageContent[pkgId] || {};
+  if(!t) return;
+  currentPkg = { id: pkgId, template: t, content };
+
+  document.getElementById('pkgDetailImg').src = content.image || '';
+  document.getElementById('pkgDetailName').textContent = t.package_name;
+  document.getElementById('pkgDetailMeta').innerHTML =
+    `<span><b>${t.days}</b> Days</span><span><b>${t.hotel_star||'—'}</b> Hotel</span>` +
+    `<span><b>${t.days?fmtINR(pkgPricePP(t)):'—'}</b> /pax</span>` +
+    `<span><b>${t.best_season||'Year-round'}</b></span>`;
+
+  const incBox = document.getElementById('pkgDetailInclusions');
+  incBox.innerHTML = (content.inclusions||[]).map(i=>`<li>${i}</li>`).join('') || '<li>—</li>';
+  const excBox = document.getElementById('pkgDetailExclusions');
+  excBox.innerHTML = (content.exclusions||[]).map(i=>`<li>${i}</li>`).join('') || '<li>—</li>';
+
+  const itinBox = document.getElementById('pkgDetailItinerary');
+  itinBox.innerHTML = (content.itinerary||[]).map(d => `
+    <div class="pkg-day">
+      <div class="pd-title">Day ${d.day}: ${d.title||''}</div>
+      <div class="pd-desc">${d.description||''}</div>
+      ${d.dist_time?`<div class="pd-dist">🚗 ${d.dist_time}</div>`:''}
+    </div>`).join('');
+
+  document.getElementById('pkgDetailPanel').style.display = 'flex';
+  const detailHint = document.getElementById('pkgDetailEmptyHint');
+  if(detailHint) detailHint.style.display = 'none';
+  drawPackageOnMap(content.route_stops || []);
+
+  payMode = 'adv40';
+  document.getElementById('pkgPayAdv40').classList.add('selected');
+  document.getElementById('pkgPayAdv60').classList.remove('selected');
+  const nameEl = document.getElementById('pkgGuestName');
+  const phoneEl = document.getElementById('pkgGuestPhone');
+  nameEl.value = ''; nameEl.classList.remove('error');
+  phoneEl.value = ''; phoneEl.classList.remove('error');
+  refreshPkgPayUI();
+}
+
+function closePkgDetail(){
+  currentPkg = null;
+  document.getElementById('pkgDetailPanel').style.display = 'none';
+  const detailHint = document.getElementById('pkgDetailEmptyHint');
+  if(detailHint) detailHint.style.display = 'flex';
+}
+
+// ---------- Pay & Book (Razorpay, inline on this page) ----------
+function pkgTotalAmount(){
+  if(!currentPkg) return 0;
+  const perPax = pkgPricePP(currentPkg.template);
+  return Math.round(perPax * pax);
+}
+
+function refreshPkgPayUI(){
+  const total = pkgTotalAmount();
+  document.getElementById('pkgPayTotal').textContent = total ? fmtINR(total) : '—';
+  document.getElementById('pkgAdv40Amt').textContent = total ? fmtINR(Math.round(total * PAY_MODE_PCT.adv40)) : '—';
+  document.getElementById('pkgAdv60Amt').textContent = total ? fmtINR(Math.round(total * PAY_MODE_PCT.adv60)) : '—';
+  const payAmt = Math.round(total * (PAY_MODE_PCT[payMode] ?? PAY_MODE_PCT.adv40));
+  document.getElementById('pkgPayNow').textContent = total ? fmtINR(payAmt) : '—';
+}
+
+function selectPkgPayMode(mode){
+  payMode = mode;
+  document.getElementById('pkgPayAdv40').classList.toggle('selected', mode==='adv40');
+  document.getElementById('pkgPayAdv60').classList.toggle('selected', mode==='adv60');
+  refreshPkgPayUI();
+}
+
+function pkgGenerateRef(){
+  return 'HE-RB-' + Date.now().toString(36).toUpperCase().slice(-6);
+}
+
+async function savePkgBookingToFirebase(bookingData){
+  try {
+    const res = await fetch(`${FB_BASE}/bookings.json`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(bookingData)
+    });
+    const data = await res.json();
+    return data.name;
+  } catch(e){
+    console.error('Firebase save error:', e);
+    return null;
+  }
+}
+
+function initiatePkgPayment(){
+  if(!currentPkg){ showToast('Open a package first'); return; }
+  const total = pkgTotalAmount();
+  if(!total){ showToast('Price unavailable for this package'); return; }
+
+  const nameEl = document.getElementById('pkgGuestName');
+  const phoneEl = document.getElementById('pkgGuestPhone');
+  const name = nameEl.value.trim();
+  const phone = phoneEl.value.trim();
+  let ok = true;
+  if(!name){ nameEl.classList.add('error'); ok = false; } else nameEl.classList.remove('error');
+  if(!phone || phone.replace(/\D/g,'').length < 10){ phoneEl.classList.add('error'); ok = false; } else phoneEl.classList.remove('error');
+  if(!ok){ showToast('Please enter your name and a valid mobile number'); return; }
+
+  const { template } = currentPkg;
+  const payAmt = Math.round(total * (PAY_MODE_PCT[payMode] ?? PAY_MODE_PCT.adv40));
+  const ref = pkgGenerateRef();
+
+  const bookingData = {
+    ref, status:'pending', source:'route-builder',
+    package: template.package_name, packageId: currentPkg.id,
+    days: template.days, gateway: selectedGateway, pax,
+    totalAmt: total, paidAmt: payAmt, payMode,
+    guest:{ name, phone },
+    createdAt: new Date().toISOString()
+  };
+
+  const options = {
+    key: RAZORPAY_KEY,
+    amount: payAmt * 100, // paise
+    currency: 'INR',
+    name: 'Luxotic India',
+    description: `${template.package_name} · ${template.days} Days`,
+    image: 'https://luxoticindia.com/logo-512.png',
+    prefill: { name, contact: phone.replace(/\D/g,'') },
+    notes: { booking_ref: ref, package: template.package_name },
+    theme: { color: '#b07d3a' },
+    handler: async function(response){
+      showToast('Payment received — confirming your booking…');
+      await savePkgBookingToFirebase({
+        ...bookingData,
+        status:'paid',
+        razorpay_payment_id: response.razorpay_payment_id,
+        razorpay_order_id: response.razorpay_order_id || '',
+        paidAt: new Date().toISOString()
+      });
+      showToast(`Booked! Ref ${ref} · Paid ${fmtINR(payAmt)}`);
+      const msg = encodeURIComponent(`🎉 My booking is confirmed!\n\nRef: ${ref}\nPackage: ${template.package_name}\nPax: ${pax}\nPaid: ${fmtINR(payAmt)} (${PAY_MODE_LABEL[payMode]})\n\nPlease share the detailed itinerary.`);
+      window.open(`https://wa.me/${WA_NUMBER}?text=${msg}`, '_blank');
+    },
+    modal: { ondismiss: function(){ console.log('Payment modal closed'); } }
+  };
+
+  try {
+    const rzp = new Razorpay(options);
+    rzp.on('payment.failed', function(resp){
+      alert('Payment failed: ' + resp.error.description + '\nPlease try again or use the WhatsApp option below.');
+    });
+    rzp.open();
+  } catch(e){
+    alert('Unable to open payment gateway. Please check your internet connection or use the WhatsApp option below.');
+    console.error(e);
+  }
+}
+
+function drawPackageOnMap(routeStops){
+  if(!map) return;
+  markersLayer.clearLayers();
+  if(routeLine){ map.removeLayer(routeLine); routeLine = null; }
+  document.getElementById('mapHint').style.display = 'none';
+  if(routeStops.length===0) return;
+
+  const latlngs = routeStops.map(s => [s.lat, s.lng]);
+  routeLine = L.polyline(latlngs, {color:'#b07d3a', weight:4, opacity:.85}).addTo(map);
+  routeStops.forEach((s,i)=>{
+    const m = L.marker([s.lat, s.lng], {icon: pinIcon(i+1, i===0)}).addTo(markersLayer);
+    m.bindPopup(`<strong>${s.name}</strong>`);
+  });
+  map.fitBounds(L.latLngBounds(latlngs), {padding:[50,50]});
+}
+
+function sendPkgToWhatsApp(){
+  if(!currentPkg){ showToast('Open a package first'); return; }
+  const { template } = currentPkg;
+  const message = `Hi Luxotic India! I'm interested in "${template.package_name}" (${template.days} Days) from ${selectedGateway} for ${pax} traveller${pax===1?'':'s'}. Please send a detailed itinerary and final quote.`;
+  window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
+}
+
+function addStop(id){
+  const p = placeById[id];
+  if(!p) return;
+  if(stops.find(s=>s.id===id)) { showToast(p.name+' is already in your route'); return; }
+  stops.push({...p});
+  renderStops();
+}
+function removeStop(id){
+  stops = stops.filter(s=>s.id!==id);
+  renderStops();
+}
+function clearAll(){
+  stops = [];
+  renderStops();
+  resetRouteView();
+}
+
+function renderStops(){
+  const wrap = document.getElementById('stopList');
+  wrap.innerHTML = '';
+  stops.forEach((s, i)=>{
+    const card = document.createElement('div');
+    card.className='stop-card';
+    card.draggable = true;
+    card.dataset.idx = i;
+    const imgUrl = placeImgUrl(s);
+    card.innerHTML = `
+      <div class="stop-badge">${i+1}</div>
+      <div class="stop-thumb" style="background:${catColor(s.segment)}">
+        <span class="stop-thumb-icon">${catIcon(s.segment)}</span>
+        ${imgUrl ? `<img src="${imgUrl}" alt="" loading="lazy" onerror="this.remove()">` : ''}
+      </div>
+      <div class="stop-info"><b>${s.name}</b><span>${s.district||''}${s.district?' · ':''}${s.region||''}</span></div>
+      <button class="stop-remove" onclick="removeStop('${s.id}')">✕</button>`;
+    card.addEventListener('dragstart', ()=>{ card.classList.add('dragging'); dragIdx = i; });
+    card.addEventListener('dragend', ()=>{ card.classList.remove('dragging'); });
+    card.addEventListener('dragover', (e)=>{ e.preventDefault(); });
+    card.addEventListener('drop', (e)=>{
+      e.preventDefault();
+      const to = i;
+      if(dragIdx===undefined || dragIdx===to) return;
+      const moved = stops.splice(dragIdx,1)[0];
+      stops.splice(to,0,moved);
+      renderStops();
+    });
+    wrap.appendChild(card);
+  });
+  document.getElementById('stopCountLabel').textContent = stops.length + (stops.length===1?' stop added':' stops added');
+}
+let dragIdx;
+
+// ---------- map ----------
+function initMap(){
+  map = L.map('map', {zoomControl:true}).setView([31.9, 77.2], 8);
+  tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'&copy; OpenStreetMap contributors', maxZoom:18
+  }).addTo(map);
+  markersLayer = L.layerGroup().addTo(map);
+}
+function setTiles(mode){
+  currentTiles = mode;
+  document.getElementById('tileMap').classList.toggle('active', mode==='map');
+  document.getElementById('tileSat').classList.toggle('active', mode==='sat');
+  map.removeLayer(tileLayer);
+  if(mode==='sat'){
+    tileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution:'Tiles &copy; Esri', maxZoom:18
+    });
+  } else {
+    tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:'&copy; OpenStreetMap contributors', maxZoom:18
+    });
+  }
+  tileLayer.addTo(map);
+}
+function pinIcon(num, isStart){
+  return L.divIcon({
+    className:'leaflet-div-icon',
+    html:`<div class="num-pin${isStart?' start':''}"><span>${num}</span></div>`,
+    iconSize:[26,26], iconAnchor:[13,26]
+  });
+}
+function resetRouteView(){
+  markersLayer.clearLayers();
+  if(routeLine){ map.removeLayer(routeLine); routeLine=null; }
+  document.getElementById('mapHint').style.display='flex';
+  document.getElementById('statDistance').textContent='—';
+  document.getElementById('statDuration').textContent='—';
+  document.getElementById('statCost').textContent='—';
+  document.getElementById('statSeason').textContent='—';
+  document.getElementById('sumStops').textContent='0';
+  document.getElementById('sumDistance').textContent='—';
+  document.getElementById('sumDuration').textContent='—';
+  document.getElementById('sumVehicle').textContent='—';
+  document.getElementById('sumCost').textContent='—';
+  document.getElementById('itineraryList').innerHTML =
+    '<div style="font-size:12.5px;color:var(--ink-soft);text-align:center;padding:30px 10px;">Your day-by-day plan will show up here after you generate a route.</div>';
+}
+
+// ---------- route generation ----------
+async function generateRoute(){
+  if(!startPlace){ showToast('Pick a valid starting point from the list'); return; }
+  if(stops.length < 1){ showToast('Add at least one destination first'); return; }
+
+  const full = [ {...startPlace}, ...stops ];
+  // de-dup consecutive identical points (start same as first stop)
+  const pts = full.filter((p,i)=> i===0 || p.id !== full[i-1].id);
+  if(pts.length < 2){ showToast('Add a destination different from your starting point'); return; }
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true; btn.textContent = 'Routing…';
+
+  try{
+    const coordStr = pts.map(p => `${p.lng},${p.lat}`).join(';');
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson&steps=false`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if(!data.routes || !data.routes.length) throw new Error('no route');
+    const route = data.routes[0];
+    routeLegs = route.legs;
+    // OSRM's public demo router gives a real driving PATH (used for the map
+    // line + drive-time estimate) but its distance/time numbers can be off.
+    // Where both leg endpoints are places in our routed distance matrix,
+    // swap in the actual real-road km so totals/costs are accurate —
+    // this matrix is the single source of truth for distance site-wide.
+    routeLegs.forEach((leg,i)=>{
+      const km = window.HPDistance ? window.HPDistance.getKm(pts[i].id, pts[i+1].id) : null;
+      if(km != null) leg.distance = km*1000;
+    });
+    lastTotalKm = routeLegs.reduce((sum,l)=>sum+l.distance/1000, 0);
+    lastTotalMin = route.duration/60;
+
+    drawRoute(route, pts);
+    renderStats(pts);
+    renderItinerary(pts);
+  } catch(err){
+    showToast('Routing service unavailable — showing straight-line estimate');
+    fallbackStraightLine(pts);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg> Generate Route';
+  }
+}
+
+function haversine(a,b){
+  const R=6371, dLat=(b.lat-a.lat)*Math.PI/180, dLng=(b.lng-a.lng)*Math.PI/180;
+  const s = Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+function fallbackStraightLine(pts){
+  routeLegs = [];
+  let totalKm = 0;
+  for(let i=1;i<pts.length;i++){
+    // Use real routed road km from the distance matrix when both stops are
+    // known places; only guess with haversine*1.35 for anything outside it
+    // (e.g. a custom point) — the matrix is the single source of truth.
+    const km = window.HPDistance
+      ? window.HPDistance.getKmWithFallback(pts[i-1].id, pts[i].id, pts[i-1], pts[i])
+      : haversine(pts[i-1], pts[i]) * 1.35;
+    routeLegs.push({distance: km*1000, duration: (km/32)*3600}); // ~32km/h avg hill speed
+    totalKm += km;
+  }
+  lastTotalKm = totalKm;
+  lastTotalMin = routeLegs.reduce((a,l)=>a+l.duration/60,0);
+
+  markersLayer.clearLayers();
+  if(routeLine){ map.removeLayer(routeLine); }
+  const latlngs = pts.map(p=>[p.lat,p.lng]);
+  routeLine = L.polyline(latlngs, {color:'#b07d3a', weight:4, dashArray:'6,6'}).addTo(map);
+  pts.forEach((p,i)=>{
+    L.marker([p.lat,p.lng], {icon: pinIcon(i+1, i===0)}).addTo(markersLayer)
+      .bindTooltip(p.name, {direction:'top', offset:[0,-24]});
+  });
+  map.fitBounds(routeLine.getBounds(), {padding:[40,40]});
+  document.getElementById('mapHint').style.display='none';
+
+  renderStats(pts);
+  renderItinerary(pts);
+}
+
+function drawRoute(route, pts){
+  markersLayer.clearLayers();
+  if(routeLine){ map.removeLayer(routeLine); }
+  const latlngs = route.geometry.coordinates.map(c=>[c[1],c[0]]);
+  routeLine = L.polyline(latlngs, {color:'#b07d3a', weight:5, opacity:.9}).addTo(map);
+  pts.forEach((p,i)=>{
+    L.marker([p.lat,p.lng], {icon: pinIcon(i+1, i===0)}).addTo(markersLayer)
+      .bindTooltip(p.name, {direction:'top', offset:[0,-24]});
+  });
+  map.fitBounds(routeLine.getBounds(), {padding:[40,40]});
+  document.getElementById('mapHint').style.display='none';
+}
+
+// ---------- vehicle & cost ----------
+function pickVehicle(pts){
+  const highAltitude = pts.some(p => /spiti|kinnaur|lahaul/i.test(p.region||'') || /spiti|kinnaur|lahaul/i.test(p.district||''));
+  if(highAltitude) return 'suv_bolero';
+  if(pax > 6) return 'tempo_12';
+  if(pax > 4) return 'suv_ertiga';
+  if(pax <= 4) return DB.config.default_vehicle in DB.vehicles ? DB.config.default_vehicle : 'suv_ertiga';
+  return 'suv_ertiga';
+}
+
+function computeCost(totalKm, days, vehicleKey){
+  const v = DB.vehicles[vehicleKey];
+  const nights = Math.max(days-1, 0);
+  const transport = totalKm*v.rate_per_km + nights*v.driver_night_halt + days*v.toll_per_day + days*v.parking_per_day + v.hill_permit_per_trip;
+  const transportGst = transport * ((v.gst_pct ?? DB.gst.transport_gst_pct)/100);
+  const transportTotal = transport + transportGst;
+
+  const rooms = Math.max(1, Math.ceil(pax / DB.config.avg_pax_per_room));
+  const hb = DB.config.hotel_per_night_pp;
+  const hotelBudgetBase = nights * rooms * DB.config.avg_pax_per_room * hb.budget;
+  const hotelPremiumBase = nights * rooms * DB.config.avg_pax_per_room * hb.premium;
+  // Hotel GST per gst_config: budget rooms carry 12%, premium/luxury carry 18%
+  const hotelBudget = hotelBudgetBase * (1 + DB.gst.hotel_gst_pct_budget/100);
+  const hotelPremium = hotelPremiumBase * (1 + DB.gst.hotel_gst_pct_premium/100);
+
+  return {
+    low: Math.round(transportTotal + hotelBudget),
+    high: Math.round(transportTotal + hotelPremium),
+    mid: Math.round(transportTotal + (hotelBudget+hotelPremium)/2)
+  };
+}
+
+function fmtINR(n){ return '₹' + Math.round(n).toLocaleString('en-IN'); }
+function fmtKm(km){ return Math.round(km).toLocaleString('en-IN') + ' km'; }
+function fmtHrs(min){
+  const h = Math.floor(min/60), m = Math.round(min%60);
+  return h + 'h' + (m? ' '+m+'m':'');
+}
+
+// Regions where road/altitude conditions make long single-day drives unsafe or
+// impossible, and where the body needs a night to acclimatize before pushing higher.
+// Kept as a name-match list (not a strict allowlist) with a season-window fallback
+// below, since not every place record will have a clean region string.
+const HIGH_ALTITUDE_REGIONS = [
+  'Spiti Valley', 'Kinnaur Valley', 'Kinnaur', 'Baspa Valley',
+  'Lahaul Valley', 'Lahaul Access', 'Pangi Valley'
+];
+
+function isHighAltitudeStop(p){
+  if(!p) return false;
+  if(p.region && HIGH_ALTITUDE_REGIONS.includes(p.region)) return true;
+  // Places only motorable Jun-Sep (snow-shut the rest of the year) are, almost
+  // without exception, high-altitude/remote in Himachal — use as a fallback signal
+  // when region text doesn't match the list above.
+  if(p.season && /^Jun.{1,2}Sep$/.test(p.season.trim())) return true;
+  return false;
+}
+
+// Suggests a day count driven by three independent constraints, taking the max:
+//  1) Drive-time — hill roads aren't safely driven for more than ~6-7hrs/day
+//  2) Sightseeing — stops still need enough days to actually visit them
+//  3) Acclimatization — high-altitude stops (Spiti/Kinnaur/Lahaul/Pangi) need
+//     built-in rest so the trip isn't pushing straight through at altitude
+function suggestedDays(numLegs, totalMin, pts){
+  const cfg = DB.config;
+  const per = cfg.auto_days_per_stop_group || 3;
+  const maxDriveHrsPerDay = cfg.max_drive_hours_per_day || 6;
+  const haStopsPerAcclimDay = cfg.high_altitude_stops_per_acclim_day || 2;
+
+  const sightseeingDays = Math.ceil(numLegs / per);
+  const driveDays = totalMin ? Math.ceil((totalMin / 60) / maxDriveHrsPerDay) : 0;
+  const haCount = (pts || []).filter(isHighAltitudeStop).length;
+  const acclimDays = haCount ? Math.ceil(haCount / haStopsPerAcclimDay) : 0;
+
+  return Math.max(1, sightseeingDays, driveDays) + acclimDays;
+}
+
+let lastTrip = null; // populated by renderStats(), read by sendToWhatsApp()
+
+function renderStats(pts){
+  const durSel = document.getElementById('duration');
+  let days = parseInt(durSel.value, 10);
+  if(!days){ days = suggestedDays(routeLegs.length, lastTotalMin, pts); }
+
+  document.getElementById('statDistance').textContent = fmtKm(lastTotalKm);
+  document.getElementById('statDuration').textContent = fmtHrs(lastTotalMin) + ' drive';
+
+  const vehicleKey = pickVehicle(pts);
+  const cost = computeCost(lastTotalKm, days, vehicleKey);
+  document.getElementById('statCost').textContent = fmtINR(cost.mid);
+
+  const seasons = [...new Set(pts.map(p=>p.season).filter(Boolean))];
+  document.getElementById('statSeason').textContent = seasons.length ? seasons[0].split(',')[0] : 'Mar - Jun';
+
+  document.getElementById('sumStops').textContent = pts.length;
+  document.getElementById('sumDistance').textContent = fmtKm(lastTotalKm);
+  document.getElementById('sumDuration').textContent = days + ' Days / ' + Math.max(days-1,0) + ' Nights';
+  document.getElementById('sumVehicle').textContent = DB.vehicles[vehicleKey].label;
+  document.getElementById('sumCost').textContent = fmtINR(cost.low) + ' – ' + fmtINR(cost.high);
+
+  lastTrip = { pts, days, nights: Math.max(days-1,0), vehicleKey, cost, totalKm: lastTotalKm, totalMin: lastTotalMin };
+  const waBtn = document.getElementById('waBtn');
+  if(waBtn) waBtn.disabled = false;
+}
+
+// ---------- itinerary ----------
+function renderItinerary(pts){
+  const durSel = document.getElementById('duration');
+  let days = parseInt(durSel.value, 10);
+  const numLegs = routeLegs.length;
+  if(!days){ days = suggestedDays(numLegs, lastTotalMin, pts); }
+  // NOTE: previously capped at `days = Math.min(days, numLegs)`, which silently
+  // threw away any rest/acclimatization days suggestedDays() added beyond the
+  // stop count — exactly what let a 2-stop Kaza route get squashed to "2 days"
+  // regardless of the 12-16hr drive. Days beyond the driving legs are now kept
+  // as explicit rest/acclimatization days instead of being discarded.
+  days = Math.max(days, 1);
+  const drivingDays = Math.min(days, Math.max(numLegs, 1));
+  const restDays = days - drivingDays;
+
+  // distribute legs across the driving days as evenly as possible
+  const base = Math.floor(numLegs/drivingDays), extra = numLegs % drivingDays;
+  const legsPerDay = [];
+  for(let i=0;i<drivingDays;i++) legsPerDay.push(base + (i<extra?1:0));
+
+  const list = document.getElementById('itineraryList');
+  list.innerHTML = '';
+  let legCursor = 0, stopCursor = 0, dayNum = 0;
+  for(let d=0; d<drivingDays; d++){
+    const n = legsPerDay[d] || 0;
+    if(n===0 && d>0) continue;
+    const daysStopsStart = stopCursor;
+    const daysStopsEnd = Math.min(stopCursor + n, pts.length-1);
+    const dayPts = pts.slice(daysStopsStart, daysStopsEnd+1);
+    let distM=0, durS=0;
+    for(let i=0;i<n;i++){ const leg = routeLegs[legCursor+i]; if(leg){ distM+=leg.distance; durS+=leg.duration; } }
+    legCursor += n;
+    stopCursor = daysStopsEnd;
+    dayNum++;
+
+    const card = document.createElement('div');
+    card.className='day-card';
+    const dayImg = placeImgUrl(dayPts[0]);
+    card.innerHTML = `
+      <div class="day-num">DAY<b>${dayNum}</b></div>
+      <div class="day-thumb" style="background:${catColor(dayPts[0]&&dayPts[0].segment)}">
+        <span class="stop-thumb-icon">${catIcon(dayPts[0]&&dayPts[0].segment)}</span>
+        ${dayImg ? `<img src="${dayImg}" alt="" loading="lazy" onerror="this.remove()">` : ''}
+      </div>
+      <div class="day-body">
+        <div class="route-line">${dayPts.map(p=>p.name).join(' → ')}</div>
+        <div class="meta"><span>🚗 ${fmtKm(distM/1000)}</span><span>⏱ ${fmtHrs(durS/60)}</span></div>
+      </div>
+      <div class="day-actions">
+        <button title="Focus on map" onclick='focusDay(${JSON.stringify(dayPts.map(p=>[p.lat,p.lng]))})'>🔍</button>
+      </div>`;
+    list.appendChild(card);
+  }
+
+  // Any days suggestedDays() added beyond the driving legs (high-altitude
+  // acclimatization, mainly) get their own explicit rest-day cards, anchored
+  // at the last stop reached, so they're visible instead of vanishing.
+  const lastPt = pts[Math.min(stopCursor, pts.length-1)];
+  for(let r=0; r<restDays; r++){
+    dayNum++;
+    const card = document.createElement('div');
+    card.className='day-card';
+    const restImg = placeImgUrl(lastPt);
+    card.innerHTML = `
+      <div class="day-num">DAY<b>${dayNum}</b></div>
+      <div class="day-thumb" style="background:${catColor(lastPt&&lastPt.segment)}">
+        <span class="stop-thumb-icon">${lastPt?catIcon(lastPt.segment):'🏔'}</span>
+        ${restImg ? `<img src="${restImg}" alt="" loading="lazy" onerror="this.remove()">` : ''}
+      </div>
+      <div class="day-body">
+        <div class="route-line">Rest &amp; Acclimatization${lastPt ? ' — '+lastPt.name : ''}</div>
+        <div class="meta"><span>🧭 No driving — high-altitude buffer day</span></div>
+      </div>
+      <div class="day-actions">
+        ${lastPt ? `<button title="Focus on map" onclick='focusDay(${JSON.stringify([[lastPt.lat,lastPt.lng]])})'>🔍</button>` : ''}
+      </div>`;
+    list.appendChild(card);
+  }
+}
+function focusDay(coords){
+  if(!coords || !coords.length) return;
+  map.fitBounds(L.latLngBounds(coords), {padding:[60,60]});
+}
+
+// ---------- misc ----------
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function saveRoute(){
+  if(stops.length===0){ showToast('Add stops and generate a route first'); return; }
+  const start = startPlace;
+  const summary = `${start?start.name:'Start'} → ${stops.map(s=>s.name).join(' → ')}\n` +
+    `${document.getElementById('sumDistance').textContent} · ${document.getElementById('sumDuration').textContent} · ${document.getElementById('sumCost').textContent}`;
+  navigator.clipboard?.writeText(summary).catch(()=>{});
+  showToast('Route saved — summary copied to clipboard');
+}
+
+// ---------- WhatsApp lead capture ----------
+function sendToWhatsApp(){
+  if(!lastTrip){ showToast('Add stops and generate a route first'); return; }
+  const start = startPlace;
+  const { pts, days, nights, vehicleKey, cost, totalKm, totalMin } = lastTrip;
+  const route = `${start?start.name:'Start'} → ${pts.map(p=>p.name).join(' → ')}`;
+  const message = `Hi Luxotic India! Please plan this route: ${route}. ` +
+    `Road distance: ${Math.round(totalKm)} km. Driving: ${fmtHrs(totalMin)}. ` +
+    `${days} days / ${nights} nights for ${pax} traveller${pax===1?'':'s'}. ` +
+    `Suggested vehicle: ${DB.vehicles[vehicleKey].label}. ` +
+    `Estimated budget: ${fmtINR(cost.low)} – ${fmtINR(cost.high)}. ` +
+    `Please send a detailed itinerary and final quote.`;
+  window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
+}
+
+// ---------- boot ----------
+async function boot(){
+  DB = await loadDB();
+  placeById = {};
+  DB.places.forEach(p => placeById[p.id] = p);
+
+  const hint = document.getElementById('mapHint');
+  if(hint) hint.style.display = 'flex';
+  updateMapHint(document.body.classList.contains('mode-packages') ? 'packages' : 'custom');
+  const genBtn = document.getElementById('generateBtn');
+  if(genBtn) genBtn.disabled = false;
+  const searchInp = document.getElementById('searchInput');
+  if(searchInp){ searchInp.disabled = false; searchInp.placeholder = 'Search places…'; }
+
+  // gateway cards render lazily when the gateway-select step opens
+
+  initMap();
+  changePax(0);
+  renderStops();
+}
+boot();
+
+</script>
+</body>
+</html>

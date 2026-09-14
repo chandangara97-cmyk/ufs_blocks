@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /legacy/
+Disallow: /tools/
+Disallow: /hotel-contacts.html
+Disallow: /group-pricing.html
+Disallow: /package-detail.html
+Disallow: /thank-you.html
+Disallow: /firebase-config.js
+Disallow: /.env
+
+Sitemap: https://luxoticindia.com/sitemap.xml

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Districts of Himachal Pradesh — Luxotic India</title>
+<meta name="description" content="Explore places to visit, best season, local food and travel tips for every district of Himachal Pradesh.">
+<meta http-equiv="refresh" content="0; url=dist_master.html">
+<style>
+  body{font-family:system-ui,sans-serif;background:#faf7f0;color:#2a2318;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+  .msg{text-align:center;padding:24px}
+  a{color:#b8860b}
+</style>
+<script>
+// This page used to fetch district data live from Firebase and render its
+// own place-cards (with no photos). It's now a static redirect: district
+// content and photos live only in dist_master.html and the per-district
+// pages (kullu.html, shimla.html, etc.), so there's a single consistent
+// version of each district instead of two.
+const PAGE_URL = {
+  kullu:"kullu.html", shimla:"shimla.html", spiti:"spiti.html", kinnaur:"kinnaur.html",
+  kangra:"kangra.html", chamba:"chamba.html", mandi:"mandi.html", sirmour:"sirmour.html",
+  solan:"solan.html", hamirpur:"hamirpur.html", una:"una.html", bilaspur:"bilaspur.html"
+};
+const ID_ALIAS = { sirmaur:"sirmour", "lahaul-spiti":"spiti", lahaul:"spiti", "lahaul&spiti":"spiti" };
+
+const params = new URLSearchParams(location.search);
+let raw = (params.get("d") || params.get("id") || "").toLowerCase().trim();
+raw = ID_ALIAS[raw] || raw;
+
+const target = PAGE_URL[raw] || "dist_master.html";
+location.replace(target);
+</script>
+</head>
+<body>
+  <div class="msg">
+    <p>Redirecting to the district guide…</p>
+    <p><a href="dist_master.html">Click here</a> if you're not redirected automatically.</p>
+  </div>
+</body>
+</html>
