@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Entry AutoFill</title>
+<script src="libs/xlsx.full.min.js"></script>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: system-ui, sans-serif;
+    margin: 0;
+    padding: 12px;
+    font-size: 13px;
+  }
+  h2 { font-size: 15px; margin: 0 0 8px; }
+  h3 { font-size: 13px; margin: 16px 0 6px; }
+  .row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  button {
+    padding: 5px 10px; border: 1px solid #999; border-radius: 6px;
+    background: #f3f3f3; cursor: pointer; font-size: 12px;
+  }
+  button:hover { background: #e6e6e6; }
+  button.primary { background: #2563eb; color: white; border-color: #2563eb; }
+  button.primary:hover { background: #1d4ed8; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  #mapList { border-top: 1px solid #ddd; padding-top: 8px; }
+  .mapRow { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; gap: 6px; }
+  .colName { font-weight: 600; min-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .selText { font-size: 11px; color: #666; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #recordBox { border: 1px solid #ddd; border-radius: 8px; padding: 8px; margin-top: 10px; }
+  .fieldRow { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f0f0f0; }
+  .fieldRow .k { color: #555; }
+  .fieldRow .v { font-weight: 600; text-align: right; margin-left: 8px; word-break: break-word; }
+  #navRow { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; gap: 6px; }
+  #status { font-size: 11px; color: #777; margin-top: 8px; min-height: 14px; }
+  #idxLabel { font-size: 12px; }
+</style>
+</head>
+<body>
+  <h2>Entry AutoFill</h2>
+
+  <div class="row">
+    <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" />
+  </div>
+
+  <h3>Field mapping (this site)</h3>
+  <div id="mapList"><em>Load a file first.</em></div>
+
+  <div id="recordBox" style="display:none">
+    <div id="navRow">
+      <button id="prevBtn">◀ Prev</button>
+      <span id="idxLabel">-</span>
+      <button id="nextBtn">Next ▶</button>
+    </div>
+    <div id="fields"></div>
+    <div class="row" style="margin-top:8px;">
+      <button class="primary" id="fillBtn" style="flex:1;">Fill this entry ⏵</button>
+    </div>
+  </div>
+
+  <div id="status"></div>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>

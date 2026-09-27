@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Entry AutoFill",
+  "version": "1.0.0",
+  "description": "Load an Excel/CSV file in a side panel and fill web form fields one click at a time, no copy-paste.",
+  "permissions": ["storage", "activeTab", "scripting", "sidePanel", "tabs"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open Entry AutoFill"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ]
+}
