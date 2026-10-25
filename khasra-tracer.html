@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Khasra tracer — Luxotic India</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+:root{--bg:#eef1f4;--panel:#fff;--ink:#14222e;--mute:#5a6b7a;--line:#cfd8e0;--acc:#d9480f;--acc2:#1f5bd6;--ok:#2b8a3e;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1820;--panel:#17232e;--ink:#e6edf3;--mute:#93a4b3;--line:#2a3a48;--acc:#ff8a4c;--acc2:#7aa7ff;--ok:#6fcf86}}
+:root[data-theme="dark"]{--bg:#0f1820;--panel:#17232e;--ink:#e6edf3;--mute:#93a4b3;--line:#2a3a48;--acc:#ff8a4c;--acc2:#7aa7ff;--ok:#6fcf86}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Trebuchet MS","Segoe UI",system-ui,sans-serif}
+main{max-width:1200px;margin:0 auto;padding:16px 14px 40px}
+h1{font:700 26px/1.2 Georgia,"Times New Roman",serif;margin:8px 0 2px}
+.sub{color:var(--mute);margin:0 0 14px}
+section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;margin:0 0 12px}
+h2{font:700 17px/1.3 Georgia,serif;margin:0 0 6px}
+p{margin:4px 0 10px}.mute{color:var(--mute);font-size:14px}
+label{display:block;font-size:14px;color:var(--mute);margin:6px 0 2px}
+input[type=number],input[type=text],input[type=file],textarea{width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+textarea{min-height:130px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
+input[type=range]{width:100%}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+button{font:inherit;font-weight:700;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;margin:4px 4px 0 0}
+button.p{background:var(--acc);border-color:var(--acc);color:#fff}
+button.on{outline:3px solid var(--acc2)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--acc2);outline-offset:1px}
+.cw{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:8px;background:#000;touch-action:pan-x pan-y}
+canvas{display:block;max-width:none}
+#st{font-size:14px;color:var(--ok);min-height:21px;margin-top:6px}
+#st.er{color:var(--acc)}
+#map{height:100%}
+#ws{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.pane{position:relative;flex:1 1 320px;height:62vh;min-height:300px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+#fr{width:100%;height:100%;border:0;background:#fff}
+#ov2{position:absolute;inset:0;cursor:crosshair;display:none;background:rgba(255,212,59,.10)}
+.dot{position:absolute;width:18px;height:18px;margin:-9px;border-radius:50%;border:2px solid #fff;color:#fff;font:700 10px/14px sans-serif;text-align:center;pointer-events:none}
+.pin{width:26px;height:26px;border-radius:50%;background:#d9480f;color:#fff;border:2px solid #fff;font:700 13px/22px sans-serif;text-align:center}
+#cl{font:13px/1.6 ui-monospace,Menlo,Consolas,monospace;margin:8px 0}
+a.bt{display:inline-block;font-weight:700;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);text-decoration:none;margin:4px 4px 0 0}
+details{margin-top:8px}
+.g3{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}.g3 button{grid-column:1/-1;margin:0}
+a{color:var(--acc2)}
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+</head>
+<body>
+<main>
+<p class="mute"><a href="/index.html">← Back to Luxotic India</a></p>
+<h1>Khasra tracer</h1>
+<p class="sub">Turn Bhunaksha screenshots into khasra polygons you can open in GIS.</p>
+
+<section>
+<h2>Split view: Bhunaksha + map</h2>
+<p class="mute">Zoom Bhunaksha to your khasra first. To calibrate: click a spot in Bhunaksha (Click mode off) so it shows its coordinates and copy them, then turn Click mode on, click that same spot and paste the coordinates in the box below. Do this for two spots far apart diagonally. After that, each click on Bhunaksha drops a corner (A, B, C, D…) on the map with its lat/long. If you pan or zoom Bhunaksha, press Recalibrate.</p>
+<div class="row"><input type="text" id="bu" value="https://bhunakshahp.nic.in/" aria-label="Bhunaksha address"><div><button id="bl">Load</button><a class="bt" href="https://bhunakshahp.nic.in/" target="_blank" rel="noopener">Open in window</a></div></div>
+<p class="mute">If the left pane stays blank or says "refused to connect", the site does not allow being shown inside another page. Open it in a window beside this one instead.</p>
+<button id="ow">Open Bhunaksha beside this page</button>
+<label><input type="checkbox" id="dm"> Separate window mode: every coordinate found or pasted becomes a corner (no reference points needed)</label>
+<div id="ws"><div class="pane"><iframe id="fr" src="https://bhunakshahp.nic.in/" title="Bhunaksha HP"></iframe><div id="ov2"></div></div><div class="pane"><div id="map"></div></div></div>
+<div id="mapmsg" class="mute"></div>
+<button class="p" id="ck">Click mode</button><button id="rc">Recalibrate</button><button id="pm">Pick on map</button><button id="ps">Pick on screenshot</button><button id="pg">Add my GPS</button><button id="pu">Undo</button><button id="pc">Clear corners</button>
+<label for="qp">Paste coordinates from Bhunaksha (sets a reference while calibrating, otherwise adds a corner)</label>
+<input type="text" id="qp" placeholder="31.1048, 77.1734  or  easting, northing">
+<button class="p" id="fc">Find coordinates (read screen)</button>
+<p class="mute">Desktop Chrome or Edge. Click a point in Bhunaksha so it shows its coordinates, press this, and choose "This tab". Only the Bhunaksha pane is read, and only coordinates are kept.</p>
+<div id="fco" class="mute"></div>
+<details><summary class="mute">Text read from the screen (to check the digits)</summary><pre id="raw" class="mute" style="white-space:pre-wrap"></pre></details>
+<div class="mute" style="margin-top:10px">Georeference to lat/long: enter the easting and northing (UTM, zone as set in step 2) for each reference spot and press its button. The lat/long is filled in for you.</div>
+<div class="g3"><input type="number" id="ce1" step="any" placeholder="Ref 1 easting" aria-label="Ref 1 easting"><input type="number" id="cn1" step="any" placeholder="Ref 1 northing" aria-label="Ref 1 northing"><button class="p" id="cb1">Convert for ref 1</button></div><div class="mute" id="cr1"></div>
+<div class="g3"><input type="number" id="ce2" step="any" placeholder="Ref 2 easting" aria-label="Ref 2 easting"><input type="number" id="cn2" step="any" placeholder="Ref 2 northing" aria-label="Ref 2 northing"><button class="p" id="cb2">Convert for ref 2</button></div><div class="mute" id="cr2"></div>
+<div id="cl"></div>
+<div class="row"><div><label for="kh2">Khasra number</label><input type="text" id="kh2"></div>
+<div style="align-self:end"><button class="p" id="fin">Finalize parcel</button></div></div>
+<details><summary class="mute">Add a Bhunaksha or other overlay (optional)</summary>
+<label for="ov">Tile URL with {z}/{x}/{y}, or a WMS URL</label><input type="text" id="ov">
+<label for="ovl">WMS layer name (WMS only)</label><input type="text" id="ovl">
+<button id="ovb">Add overlay</button></details>
+</section>
+<section>
+<h2>1. Load a screenshot</h2>
+<p class="mute">Screenshot a zoomed-in part of Bhunaksha HP. Plot lines should be clear and not covered by panels.</p>
+<input type="file" id="f" accept="image/*">
+<div class="row4">
+<div><label for="cT">Crop top</label><input type="number" id="cT" value="0" min="0"></div>
+<div><label for="cB">Crop bottom</label><input type="number" id="cB" value="0" min="0"></div>
+<div><label for="cL">Crop left</label><input type="number" id="cL" value="0" min="0"></div>
+<div><label for="cR">Crop right</label><input type="number" id="cR" value="0" min="0"></div>
+</div>
+<p class="mute">Crop (in pixels) removes the browser bar and side panels so only the map is traced.</p>
+</section>
+
+<section>
+<h2>2. Match it to the ground</h2>
+<p class="mute">In Bhunaksha, tap two plot corners far apart and note the Lat/Lng numbers shown each time. Then press Place ref 1, tap that same corner on the screenshot below, and enter its numbers. Repeat for ref 2. (Not needed if you use the live map in step 5.)</p>
+<button id="bA">Place ref 1</button><button id="bB">Place ref 2</button>
+<div class="row">
+<div><label for="ea">Ref 1: Lng (degrees or easting)</label><input type="number" id="ea" step="any"></div>
+<div><label for="na">Ref 1: Lat (degrees or northing)</label><input type="number" id="na" step="any"></div>
+<div><label for="eb">Ref 2: Lng (degrees or easting)</label><input type="number" id="eb" step="any"></div>
+<div><label for="nb">Ref 2: Lat (degrees or northing)</label><input type="number" id="nb" step="any"></div>
+</div>
+<label for="zn">UTM zone (most of Himachal is 43)</label><input type="number" id="zn" value="43" min="42" max="44">
+</section>
+
+<section>
+<h2>3. Find the parcels</h2>
+<div class="cw"><canvas id="cv" width="300" height="200"></canvas></div>
+<label for="sens">Line sensitivity: <span id="sv">70</span> (lower finds fainter lines)</label>
+<input type="range" id="sens" min="20" max="150" value="70">
+<div class="row">
+<div><label for="minA">Smallest parcel (pixels²)</label><input type="number" id="minA" value="250"></div>
+<div><label for="tol">Smoothing (pixels)</label><input type="number" id="tol" value="1.5" step="0.5"></div>
+</div>
+<label><input type="checkbox" id="shM"> Show detected lines in pink</label>
+<button class="p" id="go">Find parcels</button>
+<div id="st"></div>
+</section>
+
+<section>
+<h2>4. Number and save</h2>
+<p class="mute">Tap a parcel on the screenshot, type its khasra number, then press Set number. Compare the area shown with the area in Plot Info.</p>
+<div class="row"><div><label for="kh">Khasra number</label><input type="text" id="kh"></div>
+<div style="align-self:end"><button id="setK">Set number</button></div></div>
+<button class="p" id="add">Add parcels to collection</button>
+<p class="mute" id="cnt">Collection is empty. Overlap your screenshots a little so edge parcels are caught whole.</p>
+<button class="p" id="xd">Download KML</button><button id="xg">Show GeoJSON</button><button id="xk">Show KML</button><button id="cp">Copy text</button><button id="clr">Clear collection</button>
+<textarea id="out" readonly aria-label="Exported data"></textarea>
+<p class="mute">Paste the text into a file ending in .geojson or .kml, then open it in QGIS, Google Earth or geojson.io.</p>
+</section>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const cv=$('cv'),ctx=cv.getContext('2d');
+let img=null,W=0,H=0,mask=null,polys=[],all=[],mode=null,pts={A:null,B:null},sel=-1,overlay=null;
+
+function st(m,e){const s=$('st');s.textContent=m;s.className=e?'er':'';}
+function bounds(){const g=id=>Math.max(0,parseInt($(id).value)||0);
+ return {x0:g('cL'),y0:g('cT'),x1:Math.max(1,W-g('cR')),y1:Math.max(1,H-g('cB'))};}
+
+$('f').onchange=e=>{const fl=e.target.files[0];if(!fl)return;
+ const im=new Image();im.onload=()=>{img=im;W=im.naturalWidth;H=im.naturalHeight;cv.width=W;cv.height=H;
+  mask=null;overlay=null;polys=[];sel=-1;pts={A:null,B:null};redraw();st('Screenshot loaded: '+W+' × '+H+' pixels.');};
+ im.src=URL.createObjectURL(fl);};
+
+['cT','cB','cL','cR'].forEach(i=>$(i).oninput=redraw);
+$('shM').onchange=redraw;
+$('sens').oninput=()=>{$('sv').textContent=$('sens').value;};
+
+function setMode(m){mode=mode===m?null:m;$('bA').classList.toggle('on',mode==='A');$('bB').classList.toggle('on',mode==='B');$('ps').classList.toggle('on',mode==='P');}
+$('bA').onclick=()=>setMode('A');$('bB').onclick=()=>setMode('B');
+
+cv.onclick=e=>{if(!img)return;const r=cv.getBoundingClientRect();
+ const x=(e.clientX-r.left)*cv.width/r.width,y=(e.clientY-r.top)*cv.height/r.height;
+ if(mode==='P'){const T=mkT();if(!T){st('Set ref 1 and ref 2 first.',1);return;}const e=T(x,y),g=ll(e[0],e[1],+$('zn').value||43);addC(g[1],g[0],[x,y]);return;}
+ if(mode){pts[mode]=[x,y];setMode(mode);redraw();return;}
+ let best=-1,ba=1e18;polys.forEach((p,i)=>{if(inside(x,y,p.px)){const a=Math.abs(area(p.px));if(a<ba){ba=a;best=i;}}});
+ sel=best;if(best>=0){$('kh').value=polys[best].label||'';const T=mkT();
+  let m='Selected parcel '+(best+1);if(T){m+=': about '+Math.round(Math.abs(area(polys[best].px.map(q=>T(q[0],q[1])))))+' m² on the ground';}
+  st(m+'.');}
+ redraw();};
+
+function inside(x,y,ring){let c=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++){const a=ring[i],b=ring[j];
+ if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])c=!c;}return c;}
+function area(r){let s=0;for(let i=0,j=r.length-1;i<r.length;j=i++)s+=(r[j][0]*r[i][1]-r[i][0]*r[j][1]);return s/2;}
+
+function redraw(){if(!img)return;ctx.drawImage(img,0,0);
+ if($('shM').checked&&mask){if(!overlay){overlay=ctx.createImageData(W,H);for(let i=0;i<mask.length;i++)if(mask[i]){overlay.data[i*4]=255;overlay.data[i*4+1]=0;overlay.data[i*4+2]=200;overlay.data[i*4+3]=200;}}
+  const t=document.createElement('canvas');t.width=W;t.height=H;t.getContext('2d').putImageData(overlay,0,0);ctx.drawImage(t,0,0);}
+ const b=bounds();ctx.save();ctx.strokeStyle='#ffd43b';ctx.lineWidth=2;ctx.setLineDash([8,6]);ctx.strokeRect(b.x0,b.y0,b.x1-b.x0,b.y1-b.y0);ctx.restore();
+ polys.forEach((p,i)=>{ctx.beginPath();p.px.forEach((q,k)=>k?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.closePath();
+  ctx.fillStyle=i===sel?'rgba(217,72,15,.45)':'rgba(217,72,15,.18)';ctx.fill();ctx.lineWidth=i===sel?3:1.5;ctx.strokeStyle='#d9480f';ctx.stroke();
+  if(p.label){const c=cen(p.px);ctx.font='bold 18px sans-serif';ctx.fillStyle='#fff';ctx.strokeStyle='#000';ctx.lineWidth=4;ctx.strokeText(p.label,c[0]-10,c[1]);ctx.fillText(p.label,c[0]-10,c[1]);}});
+ [['A','#2b8a3e'],['B','#7048e8']].forEach(([k,col])=>{const q=pts[k];if(!q)return;ctx.beginPath();ctx.arc(q[0],q[1],9,0,7);ctx.fillStyle=col;ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='#fff';ctx.stroke();ctx.font='bold 16px sans-serif';ctx.fillStyle='#fff';ctx.fillText(k==='A'?'1':'2',q[0]+12,q[1]-10);});
+ corners.forEach((c,i)=>{if(!c.px)return;ctx.beginPath();ctx.arc(c.px[0],c.px[1],8,0,7);ctx.fillStyle='#d9480f';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();ctx.font='bold 14px sans-serif';ctx.fillStyle='#fff';ctx.fillText(nm(i),c.px[0]-4,c.px[1]+5);});}
+function cen(r){let x=0,y=0;r.forEach(q=>{x+=q[0];y+=q[1];});return [x/r.length,y/r.length];}
+
+$('go').onclick=()=>{if(!img){st('Load a screenshot first.',1);return;}
+ const t=+$('sens').value,minA=+$('minA').value||250,tol=+$('tol').value||1.5,b=bounds();
+ const d=ctx.getImageData(0,0,W,H);ctx.putImageData(d,0,0);
+ // redraw clean image to read pixels
+ ctx.drawImage(img,0,0);const px=ctx.getImageData(0,0,W,H).data;
+ const m0=new Uint8Array(W*H);
+ for(let i=0;i<W*H;i++){const r=px[i*4],g=px[i*4+1],bl=px[i*4+2];if(bl-r>t&&bl-g>t*.4&&bl>100)m0[i]=1;}
+ mask=new Uint8Array(W*H);
+ for(let y=b.y0;y<b.y1;y++)for(let x=b.x0;x<b.x1;x++){const i=y*W+x;if(m0[i]){mask[i]=1;if(x>0)mask[i-1]=1;if(x<W-1)mask[i+1]=1;if(y>0)mask[i-W]=1;if(y<H-1)mask[i+W]=1;}}
+ overlay=null;
+ const lab=new Int32Array(W*H),stack=new Int32Array(W*H),maxA=(b.x1-b.x0)*(b.y1-b.y0)*.25;let id=0;polys=[];sel=-1;
+ for(let y=b.y0;y<b.y1;y++)for(let x=b.x0;x<b.x1;x++){const i=y*W+x;if(mask[i]||lab[i])continue;
+  id++;let n=0,edge=false,sp=0;stack[sp++]=i;lab[i]=id;
+  while(sp){const j=stack[--sp],jx=j%W,jy=(j/W)|0;n++;
+   if(jx===b.x0||jx===b.x1-1||jy===b.y0||jy===b.y1-1)edge=true;
+   if(jx>b.x0){const k=j-1;if(!mask[k]&&!lab[k]){lab[k]=id;stack[sp++]=k;}}
+   if(jx<b.x1-1){const k=j+1;if(!mask[k]&&!lab[k]){lab[k]=id;stack[sp++]=k;}}
+   if(jy>b.y0){const k=j-W;if(!mask[k]&&!lab[k]){lab[k]=id;stack[sp++]=k;}}
+   if(jy<b.y1-1){const k=j+W;if(!mask[k]&&!lab[k]){lab[k]=id;stack[sp++]=k;}}}
+  if(!edge&&n>=minA&&n<=maxA){const ring=trace(x,y,id,lab);if(ring.length>=3){const s=simp(ring,tol);if(s.length>=3)polys.push({px:s,label:''});}}}
+ redraw();
+ st(polys.length?'Found '+polys.length+' whole parcels. Parcels touching the edge are skipped. Tap one to number it.':'No whole parcels found. Try a lower sensitivity, a smaller parcel size, or less cropping.',!polys.length);};
+
+const DX=[1,0,-1,0],DY=[0,1,0,-1];
+function trace(sx,sy,id,lab){const inC=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&lab[y*W+x]===id;
+ let vx=sx,vy=sy,d=0,out=[[sx,sy]],n=0;
+ do{let L,R;
+  if(d===0){L=[vx,vy-1];R=[vx,vy];}else if(d===1){L=[vx,vy];R=[vx-1,vy];}else if(d===2){L=[vx-1,vy];R=[vx-1,vy-1];}else{L=[vx-1,vy-1];R=[vx,vy-1];}
+  let nd;if(inC(L[0],L[1]))nd=(d+3)%4;else if(inC(R[0],R[1]))nd=d;else nd=(d+1)%4;
+  if(nd!==d)out.push([vx,vy]);d=nd;vx+=DX[d];vy+=DY[d];n++;
+ }while(!(vx===sx&&vy===sy)&&n<400000);
+ return out;}
+function simp(r,tol){const a=r.concat([r[0]]);const keep=new Uint8Array(a.length);keep[0]=keep[a.length-1]=1;
+ const st=[[0,a.length-1]];while(st.length){const [s,e]=st.pop();let md=0,mi=-1;
+  for(let i=s+1;i<e;i++){const dd=pd(a[i],a[s],a[e]);if(dd>md){md=dd;mi=i;}}
+  if(md>tol&&mi>0){keep[mi]=1;st.push([s,mi],[mi,e]);}}
+ const o=[];for(let i=0;i<a.length-1;i++)if(keep[i])o.push(a[i]);return o;}
+function pd(p,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy;if(!l)return Math.hypot(p[0]-a[0],p[1]-a[1]);
+ return Math.abs(dy*p[0]-dx*p[1]+b[0]*a[1]-b[1]*a[0])/Math.sqrt(l);}
+
+function mkT(){const A=pts.A,B=pts.B,f=id=>parseFloat($(id).value);
+ const z=+$('zn').value||43,c=(e,n)=>Math.abs(e)>1000?[e,n]:utm(e,n,z),r1=c(f('ea'),f('na')),r2=c(f('eb'),f('nb')),ea=r1[0],na=r1[1],eb=r2[0],nb=r2[1];
+ if(!A||!B||[ea,na,eb,nb].some(isNaN))return null;
+ const dx=B[0]-A[0],dy=-(B[1]-A[1]),du=eb-ea,dv=nb-na,q=dx*dx+dy*dy;if(!q)return null;
+ const ar=(du*dx+dv*dy)/q,ai=(dv*dx-du*dy)/q;
+ return (x,y)=>{const px=x-A[0],py=-(y-A[1]);return [ea+ar*px-ai*py,na+ar*py+ai*px];};}
+
+function ll(E,N,z){const a=6378137,f=1/298.257223563,k0=.9996,e2=f*(2-f),ep=e2/(1-e2);
+ const x=E-500000,M=N/k0,mu=M/(a*(1-e2/4-3*e2*e2/64-5*e2**3/256)),s5=Math.sqrt(1-e2),e1=(1-s5)/(1+s5);
+ const p=mu+(3*e1/2-27*e1**3/32)*Math.sin(2*mu)+(21*e1*e1/16-55*e1**4/32)*Math.sin(4*mu)+(151*e1**3/96)*Math.sin(6*mu)+(1097*e1**4/512)*Math.sin(8*mu);
+ const sn=Math.sin(p),cs=Math.cos(p),tn=Math.tan(p),C=ep*cs*cs,T=tn*tn,Nn=a/Math.sqrt(1-e2*sn*sn),R=a*(1-e2)/Math.pow(1-e2*sn*sn,1.5),D=x/(Nn*k0);
+ const lat=p-(Nn*tn/R)*(D*D/2-(5+3*T+10*C-4*C*C-9*ep)*D**4/24+(61+90*T+298*C+45*T*T-252*ep-3*C*C)*D**6/720);
+ const lon=(D-(1+2*T+C)*D**3/6+(5-2*C+28*T-3*C*C+8*ep+24*T*T)*D**5/120)/cs;
+ return [(z*6-183)+lon*180/Math.PI,lat*180/Math.PI];}
+
+$('setK').onclick=()=>{if(sel<0){st('Tap a parcel first.',1);return;}polys[sel].label=$('kh').value.trim();redraw();st('Number set for parcel '+(sel+1)+'.');};
+
+$('add').onclick=()=>{const T=mkT();if(!T){st('Place points A and B on the screenshot and fill in all four numbers first.',1);return;}
+ if(!polys.length){st('Find parcels first.',1);return;}let added=0;
+ polys.forEach(p=>{const ring=p.px.map(q=>T(q[0],q[1]));const c=cen(ring);
+  if(all.some(o=>Math.hypot(o.c[0]-c[0],o.c[1]-c[1])<2))return;
+  all.push({ring,c,label:p.label,area:Math.abs(area(ring))});added++;});
+ $('cnt').textContent='Collection: '+all.length+' parcels ('+all.filter(o=>o.label).length+' numbered). '+added+' new from this screenshot.';
+ st('Added '+added+' parcels.');};
+
+function gj(){const z=+$('zn').value||43;return JSON.stringify({type:'FeatureCollection',features:all.map(o=>{const r=o.ll?o.ring.map(q=>q.slice()):o.ring.map(q=>ll(q[0],q[1],z));r.push(r[0]);
+ return {type:'Feature',properties:{khasra:o.label||null,area_m2:Math.round(o.area)},geometry:{type:'Polygon',coordinates:[r]}};})},null,1);}
+function kml(){const z=+$('zn').value||43;return '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document>\n'+all.map(o=>{const r=o.ll?o.ring.map(q=>q.slice()):o.ring.map(q=>ll(q[0],q[1],z));r.push(r[0]);
+ return '<Placemark><name>'+(o.label||'')+'</name><Polygon><outerBoundaryIs><LinearRing><coordinates>'+r.map(q=>q[0].toFixed(7)+','+q[1].toFixed(7)+',0').join(' ')+'</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>'+(o.ll?r.slice(0,-1).map((q,i)=>'<Placemark><name>'+(o.label||'')+' '+nm(i)+'</name><Point><coordinates>'+q[0].toFixed(7)+','+q[1].toFixed(7)+',0</coordinates></Point></Placemark>').join(''):'');}).join('\n')+'\n</Document></kml>';}
+$('xg').onclick=()=>{$('out').value=all.length?gj():'';if(!all.length)st('Collection is empty.',1);};
+$('xk').onclick=()=>{$('out').value=all.length?kml():'';if(!all.length)st('Collection is empty.',1);};
+$('cp').onclick=()=>{const o=$('out');if(!o.value){st('Show GeoJSON or KML first.',1);return;}o.focus();o.select();
+ let ok=false;try{ok=document.execCommand('copy');}catch(e){}st(ok?'Copied.':'Select all the text and copy it by hand.',!ok);};
+$('clr').onclick=()=>{all=[];$('out').value='';$('cnt').textContent='Collection is empty.';st('Collection cleared.');};
+
+// ---- corner picking ----
+let map=null,lg=null,ovl=null,pick=null,corners=[];
+const mm=m=>{$('mapmsg').textContent=m;};
+function nm(i){return String.fromCharCode(65+i%26)+(i>=26?Math.floor(i/26):'');}
+function aream(r){const la=r.reduce((s,q)=>s+q[1],0)/r.length,kx=111320*Math.cos(la*Math.PI/180),ky=110574;return Math.abs(area(r.map(q=>[q[0]*kx,q[1]*ky])));}
+function initMap(){
+ if(!window.L){mm('Live map needs internet (Leaflet did not load). Screenshot picking still works.');return;}
+ map=L.map('map').setView([31.1048,77.1734],9);lg=L.layerGroup().addTo(map);
+ const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'});
+ const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
+ sat.addTo(map);L.control.layers({Satellite:sat,Street:osm}).addTo(map);
+ map.on('click',e=>{if(pick==='map')addC(e.latlng.lat,e.latlng.lng);});}
+function addC(lat,lng,px,o){corners.push({lat,lng,px:px||null,o:o||null});drawC();}
+function drawC(){
+ if(map){lg.clearLayers();
+  corners.forEach((c,i)=>{const m=L.marker([c.lat,c.lng],{draggable:true,icon:L.divIcon({className:'',html:'<div class="pin">'+nm(i)+'</div>',iconSize:[26,26]})}).addTo(lg);
+   m.on('dragend',()=>{const p=m.getLatLng();c.lat=p.lat;c.lng=p.lng;c.px=c.o=null;drawC();});});
+  if(corners.length>2)L.polygon(corners.map(c=>[c.lat,c.lng]),{color:'#d9480f',weight:2}).addTo(lg);}
+ $('cl').innerHTML=corners.length?corners.map((c,i)=>'<div>'+nm(i)+': '+c.lat.toFixed(7)+', '+c.lng.toFixed(7)+'</div>').join(''):'<div class="mute">No corners yet.</div>';
+ redraw();dots();}
+$('pm').onclick=()=>{pick=pick==='map'?null:'map';$('pm').classList.toggle('on',!!pick);if(pick&&mode==='P')setMode('P');mm(pick?'Tap each corner on the map in order.':'Map picking off.');};
+$('ps').onclick=()=>{if(pick){pick=null;$('pm').classList.remove('on');}setMode('P');mm(mode==='P'?'Tap each corner on the screenshot in order.':'Screenshot picking off.');};
+$('pu').onclick=()=>{corners.pop();drawC();};
+$('pc').onclick=()=>{corners=[];drawC();};
+$('pg').onclick=()=>{if(!navigator.geolocation){mm('GPS is not available here.');return;}
+ navigator.geolocation.getCurrentPosition(p=>{addC(p.coords.latitude,p.coords.longitude);if(map)map.setView([p.coords.latitude,p.coords.longitude],19);mm('Added your GPS position (±'+Math.round(p.coords.accuracy)+' m).');},()=>mm('Could not get GPS. Allow location access and try again.'),{enableHighAccuracy:true,timeout:20000});};
+$('fin').onclick=()=>{if(corners.length<3){mm('Pick at least 3 corners first.');return;}
+ const ring=corners.map(c=>[c.lng,c.lat]),lab=$('kh2').value.trim(),a=aream(ring);
+ all.push({ll:true,ring,c:cen(ring),label:lab,area:a});
+ corners=[];$('kh2').value='';drawC();
+ $('cnt').textContent='Collection: '+all.length+' parcels ('+all.filter(o=>o.label).length+' numbered).';
+ mm('Saved khasra '+(lab||'(no number)')+', about '+Math.round(a)+' m². Use Download KML in step 4, or pick the next parcel.');};
+$('ovb').onclick=()=>{if(!map){mm('Map is not loaded.');return;}const u=$('ov').value.trim();if(!u)return;if(ovl)map.removeLayer(ovl);
+ ovl=u.includes('{z}')?L.tileLayer(u,{maxZoom:22,opacity:.8}):L.tileLayer.wms(u,{layers:$('ovl').value.trim(),format:'image/png',transparent:true});
+ ovl.addTo(map);mm('Overlay added. If nothing shows, that server may not allow other sites.');};
+$('xd').onclick=()=>{if(!all.length){st('Collection is empty.',1);return;}const k=kml();$('out').value=k;
+ try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([k],{type:'application/vnd.google-earth.kml+xml'}));a.download='khasra.kml';document.body.appendChild(a);a.click();a.remove();st('KML downloaded. The text is also shown below.');}
+ catch(e){st('Copy the KML text below into a .kml file.',1);}};
+// ---- split view ----
+const blank=()=>[{p:null,g:null},{p:null,g:null}];let rf=blank(),ck=false;
+const cal=()=>rf.every(r=>r.p&&r.g);
+function utm(lng,lat,z){const a=6378137,f=1/298.257223563,k0=.9996,e2=f*(2-f),ep=e2/(1-e2),ph=lat*Math.PI/180,la=(lng-(z*6-183))*Math.PI/180;
+ const sn=Math.sin(ph),cs=Math.cos(ph),tn=Math.tan(ph),N=a/Math.sqrt(1-e2*sn*sn),T=tn*tn,C=ep*cs*cs,A=la*cs;
+ const M=a*((1-e2/4-3*e2*e2/64-5*e2**3/256)*ph-(3*e2/8+3*e2*e2/32+45*e2**3/1024)*Math.sin(2*ph)+(15*e2*e2/256+45*e2**3/1024)*Math.sin(4*ph)-(35*e2**3/3072)*Math.sin(6*ph));
+ return [500000+k0*N*(A+(1-T+C)*A**3/6+(5-18*T+T*T+72*C-58*ep)*A**5/120),k0*(M+N*tn*(A*A/2+(5-T+9*C+4*C*C)*A**4/24+(61-58*T+T*T+600*C-330*ep)*A**6/720))];}
+function parseC(t){const n=(t.match(/-?\d+(?:\.\d+)?/g)||[]).map(Number);if(n.length<2)return null;const a=n[0],b=n[1];
+ if(Math.abs(a)>1000&&Math.abs(b)>1000)return ll(Math.min(a,b),Math.max(a,b),+$('zn').value||43);
+ if(Math.abs(a)<=180&&Math.abs(b)<=180)return [Math.max(a,b),Math.min(a,b)];return null;}
+function tf(x,y){const a=rf[0],b=rf[1],dx=b.p[0]-a.p[0],dy=b.p[1]-a.p[1];if(Math.abs(dx)<20||Math.abs(dy)<20)return null;
+ return [a.g[0]+(x-a.p[0])*(b.g[0]-a.g[0])/dx,a.g[1]+(y-a.p[1])*(b.g[1]-a.g[1])/dy];}
+function dots(){const v=$('ov2');v.querySelectorAll('.dot').forEach(d=>d.remove());
+ const add=(p,t,c)=>{const d=document.createElement('div');d.className='dot';d.style.cssText='left:'+p[0]+'px;top:'+p[1]+'px;background:'+c;d.textContent=t;v.appendChild(d);};
+ rf.forEach((r,i)=>r.p&&add(r.p,i+1,'#7048e8'));corners.forEach((c,i)=>c.o&&add(c.o,nm(i),'#d9480f'));}
+function msg2(){if(!ck){mm('Click mode off: Bhunaksha is live, so you can pan, zoom and read its coordinates.');return;}
+ if(cal()){mm('Calibrated. Click each corner on Bhunaksha in order.');return;}
+ const i=!rf[0].p?0:!rf[1].p?1:-1;
+ mm(i>=0?'Click the spot for reference '+(i+1)+' on Bhunaksha.'+(rf[i].g?'':' Then convert or paste its coordinates.'):'Convert or paste the coordinates for reference '+(!rf[0].g?1:2)+'.');}
+$('ck').onclick=()=>{ck=!ck;$('ov2').style.display=ck?'block':'none';$('ck').classList.toggle('on',ck);dots();msg2();};
+$('rc').onclick=()=>{rf=blank();dots();msg2();};
+$('ow').onclick=()=>{const w=screen.availWidth,h=screen.availHeight,u=$('bu').value.trim()||'https://bhunakshahp.nic.in/';
+ if(!window.open(u,'bhu','popup,width='+Math.floor(w/2)+',height='+h+',left=0,top=0')){mm('The browser blocked the new window. Allow pop-ups for this page and try again.');return;}
+ $('dm').checked=true;mm('Bhunaksha opened on the left. Snap this page to the right half (Windows key + Right arrow). Click a point in Bhunaksha, then press Find coordinates and choose its window.');};
+$('bl').onclick=()=>{$('fr').src=$('bu').value.trim();};
+$('ov2').onclick=e=>{const r=$('ov2').getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,i=!rf[0].p?0:!rf[1].p?1:-1;
+ if(i>=0){rf[i].p=[x,y];dots();msg2();return;}
+ if(!cal()){msg2();return;}
+ const g=tf(x,y);if(!g){mm('The two references are too close in a line. Press Recalibrate and use two spots far apart diagonally.');return;}
+ addC(g[1],g[0],null,[x,y]);if(map&&corners.length===1)map.setView([g[1],g[0]],18);};
+function qpGo(){const g=parseC($('qp').value);if(!g){mm('Could not read two coordinate numbers from that text.');return;}$('qp').value='';useG(g);}
+function useG(g){
+ if($('dm').checked){addC(g[1],g[0]);if(map)map.setView([g[1],g[0]],Math.max(map.getZoom(),18));return;}
+ if(!cal()){const i=!rf[0].g?0:!rf[1].g?1:-1;if(i<0){mm('Both references already have coordinates. Click their spots on Bhunaksha.');return;}rf[i].g=g;$(i?'eb':'ea').value=g[0].toFixed(7);$(i?'nb':'na').value=g[1].toFixed(7);dots();msg2();}
+ else{addC(g[1],g[0]);if(map)map.setView([g[1],g[0]],Math.max(map.getZoom(),18));}}
+$('qp').addEventListener('paste',()=>setTimeout(qpGo,0));$('qp').addEventListener('change',()=>{if($('qp').value)qpGo();});
+function conv(i){let E=parseFloat($('ce'+i).value),N=parseFloat($('cn'+i).value);
+ if(isNaN(E)||isNaN(N)){mm('Enter the easting and northing for ref '+i+' first.');return;}
+ if(E>N){const t=E;E=N;N=t;}
+ const g=ll(E,N,+$('zn').value||43);
+ $(i==1?'ea':'eb').value=g[0].toFixed(7);$(i==1?'na':'nb').value=g[1].toFixed(7);
+ $('cr'+i).textContent='Ref '+i+' lat, long: '+g[1].toFixed(7)+', '+g[0].toFixed(7);
+ rf[i-1].g=g;dots();msg2();}
+$('cb1').onclick=()=>conv(1);$('cb2').onclick=()=>conv(2);
+// ---- read coordinates from the screen ----
+async function grab(){
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia)throw new Error('Screen capture is not available in this browser. Use desktop Chrome or Edge.');
+ const ov=$('ov2'),was=ov.style.display,sw=$('dm').checked;ov.style.display='none';$('ws').scrollIntoView({block:'center'});
+ const ms=await navigator.mediaDevices.getDisplayMedia(sw?{video:true}:{video:true,preferCurrentTab:true});
+ try{const v=document.createElement('video');v.srcObject=ms;v.muted=true;await v.play();await new Promise(r=>setTimeout(r,600));
+  const surf=(ms.getVideoTracks()[0].getSettings()||{}).displaySurface,c=document.createElement('canvas');
+  c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);
+  if(sw||surf!=='browser')return c;
+  const k=v.videoWidth/innerWidth,r=$('fr').getBoundingClientRect(),o=document.createElement('canvas');
+  o.width=Math.max(1,Math.round(r.width*k*2));o.height=Math.max(1,Math.round(r.height*k*2));
+  o.getContext('2d').drawImage(c,r.left*k,r.top*k,r.width*k,r.height*k,0,0,o.width,o.height);return o;
+ }finally{ms.getTracks().forEach(t=>t.stop());ov.style.display=was;}}
+function loadOCR(){return new Promise((ok,no)=>{if(window.Tesseract)return ok();const t=document.createElement('script');
+ t.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';t.onload=ok;t.onerror=()=>no(new Error('Could not load the text reader. It needs internet.'));document.head.appendChild(t);});}
+function findC(t){const T=t.replace(/,/g,' '),toks=[],re=/\d{1,7}(?:\.\d+)?/g;let m;
+ while((m=re.exec(T))){const v=parseFloat(m[0]),p=m[0].split('.'),d=(p[1]||'').length;
+  if(d>=4&&v>=8&&v<=37)toks.push({k:'lat',v,i:m.index});else if(d>=4&&v>=68&&v<=97)toks.push({k:'lng',v,i:m.index});
+  else if(p[0].length===6)toks.push({k:'E',v,i:m.index});else if(p[0].length===7)toks.push({k:'N',v,i:m.index});}
+ const out=[],pair=(a,b,f)=>toks.filter(x=>x.k===a).forEach(x=>{const y=toks.filter(z=>z.k===b).sort((p,q)=>Math.abs(p.i-x.i)-Math.abs(q.i-x.i))[0];if(y&&Math.abs(y.i-x.i)<80)out.push(f(x,y));});
+ pair('lat','lng',(a,b)=>({lat:a.v,lng:b.v,raw:a.v+', '+b.v}));
+ pair('E','N',(a,b)=>{const g=ll(a.v,b.v,+$('zn').value||43);return {lat:g[1],lng:g[0],raw:'E '+a.v+', N '+b.v};});
+ return out.filter((o,i)=>o.lat>20&&o.lat<40&&o.lng>68&&o.lng<97&&out.findIndex(p=>Math.abs(p.lat-o.lat)<1e-6&&Math.abs(p.lng-o.lng)<1e-6)===i);}
+$('fc').onclick=async()=>{const o=$('fco');o.textContent='';
+ try{mm($('dm').checked?'Choose the Bhunaksha window or tab in the sharing prompt.':'Choose "This tab" in the sharing prompt.');const c=await grab();mm('Reading the Bhunaksha pane…');await loadOCR();
+  const r=await Tesseract.recognize(c,'eng');$('raw').textContent=r.data.text;const f=findC(r.data.text);
+  if(!f.length){mm('No coordinates found. Click a point in Bhunaksha so it shows its coordinates, then try again.');return;}
+  if(f.length===1){useG([f[0].lng,f[0].lat]);mm('Found '+f[0].lat.toFixed(7)+', '+f[0].lng.toFixed(7)+' (read as '+f[0].raw+') and used it. Check the digits in the text box below.');return;}
+  mm('Found '+f.length+' coordinates. Choose which to use.');
+  f.forEach(x=>{const d=document.createElement('div'),b=document.createElement('button');d.textContent=x.lat.toFixed(7)+', '+x.lng.toFixed(7)+' ';b.textContent='Use';b.onclick=()=>useG([x.lng,x.lat]);d.appendChild(b);o.appendChild(d);});
+ }catch(e){mm(e.name==='NotAllowedError'?'Screen sharing was cancelled.':e.message);}};
+initMap();drawC();msg2();setTimeout(()=>map&&map.invalidateSize(),400);
+</script>
+</body>
+</html>
